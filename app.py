@@ -5,8 +5,9 @@ import pandas as pd
 import streamlit as st
 
 # ============================================================
-# HydrogenOrg HPRS Rail Research Simulator V1.1
+# HydrogenOrg HPRS Rail Research Simulator V1.2
 # Dedicated rail application — research / scenario model only.
+# V1.2 adds CEO break-even, development-target and priority diagnostics.
 # ============================================================
 
 st.set_page_config(
@@ -299,6 +300,135 @@ break_even_electricity = (
 )
 
 # -----------------------------
+# V1.2 CEO break-even & development-target diagnostics
+# -----------------------------
+water_cost_per_gross_h2 = WATER_KG_PER_KG_H2_STOICH / 1000.0 * water_price_chf_m3
+non_electric_cost_per_gross_h2 = external_heat_kwh_gross * heat_price_chf_kwh + water_cost_per_gross_h2
+gross_reactor_cost_per_gross_h2 = plasma_kwh_gross * electricity_chf_kwh + non_electric_cost_per_gross_h2
+hprs_h2_cost_per_delivered = gross_reactor_cost_per_gross_h2 / max(h2_recovery, 1e-12)
+
+# Physical guard at the selected external-heat assumption.  The simple model
+# requires both total energy >= ΔH and the electricity + 20% heat exergy proxy >= ΔG.
+physical_min_plasma_gross = max(
+    0.0,
+    WATER_SPLIT_DH_KWH_PER_KG_H2 - external_heat_kwh_gross,
+    WATER_SPLIT_DG_KWH_PER_KG_H2 - 0.20 * external_heat_kwh_gross,
+)
+physical_min_total_delivered = (physical_min_plasma_gross + external_heat_kwh_gross) / max(h2_recovery, 1e-12)
+physical_floor_h2_cost = (
+    physical_min_plasma_gross * electricity_chf_kwh
+    + external_heat_kwh_gross * heat_price_chf_kwh
+    + water_cost_per_gross_h2
+) / max(h2_recovery, 1e-12)
+
+max_plasma_for_cost_parity = (
+    (h2_price_chf_kg * h2_recovery - non_electric_cost_per_gross_h2) / electricity_chf_kwh
+    if electricity_chf_kwh > 0 else math.inf
+)
+required_recovery_for_cost_parity = (
+    gross_reactor_cost_per_gross_h2 / h2_price_chf_kg
+    if h2_price_chf_kg > 0 else math.inf
+)
+required_recovery_at_physical_floor = (
+    (physical_min_plasma_gross * electricity_chf_kwh + non_electric_cost_per_gross_h2) / h2_price_chf_kg
+    if h2_price_chf_kg > 0 else math.inf
+)
+physical_floor_break_even_electricity = (
+    (h2_price_chf_kg * h2_recovery - non_electric_cost_per_gross_h2) / physical_min_plasma_gross
+    if physical_min_plasma_gross > 0 else math.inf
+)
+cost_parity_inside_thermo_guard = max_plasma_for_cost_parity >= physical_min_plasma_gross
+
+# Fixed analytical reference points — not performance claims.
+prototype_plasma = 41.0
+prototype_recovery = 0.90
+prototype_heat = 2.43
+prototype_total_delivered = (prototype_plasma + prototype_heat) / prototype_recovery
+prototype_eff = fc_dc_per_delivered_h2 / prototype_total_delivered
+prototype_h2_cost = (
+    prototype_plasma * electricity_chf_kwh
+    + prototype_heat * heat_price_chf_kwh
+    + water_cost_per_gross_h2
+) / prototype_recovery
+
+ideal_heat = WATER_SPLIT_DH_KWH_PER_KG_H2 - WATER_SPLIT_DG_KWH_PER_KG_H2
+ideal_total_delivered = WATER_SPLIT_DH_KWH_PER_KG_H2
+ideal_eff_current_fc = fc_dc_per_delivered_h2 / ideal_total_delivered
+ideal_h2_cost = (
+    WATER_SPLIT_DG_KWH_PER_KG_H2 * electricity_chf_kwh
+    + ideal_heat * heat_price_chf_kwh
+    + water_cost_per_gross_h2
+)
+
+def evaluate_hprs_case(plasma, recovery, heat, fc_eff_case):
+    recovery = max(recovery, 1e-12)
+    h2_case = dc_bus_kwh / max(fc_eff_case * H2_LHV_KWH_KG, 1e-12)
+    gross_case = h2_case / recovery
+    total_case = gross_case * (plasma + heat)
+    cost_case = gross_case * (
+        plasma * electricity_chf_kwh
+        + heat * heat_price_chf_kwh
+        + water_cost_per_gross_h2
+    )
+    delivered_energy = (plasma + heat) / recovery
+    system_eff = (H2_LHV_KWH_KG * fc_eff_case) / max(delivered_energy, 1e-12)
+    return {
+        'energy_kwh_km': total_case / max(mission_km, 1e-12),
+        'cost_chf_km': cost_case / max(mission_km, 1e-12),
+        'system_eff': system_eff,
+        'h2_kg_km': h2_case / max(mission_km, 1e-12),
+    }
+
+baseline_case = evaluate_hprs_case(plasma_kwh_gross, h2_recovery, external_heat_kwh_gross, fc_eff)
+priority_recovery_target = min(0.99, max(h2_recovery, 0.95))
+priority_fc_target = min(0.65, max(fc_eff, 0.55))
+minimum_heat_with_selected_plasma = max(
+    0.0,
+    WATER_SPLIT_DH_KWH_PER_KG_H2 - plasma_kwh_gross,
+    (WATER_SPLIT_DG_KWH_PER_KG_H2 - plasma_kwh_gross) / 0.20 if plasma_kwh_gross < WATER_SPLIT_DG_KWH_PER_KG_H2 else 0.0,
+)
+priority_heat_target = max(minimum_heat_with_selected_plasma, external_heat_kwh_gross * 0.50)
+
+priority_cases = [
+    (
+        t('Plasmaenergie → physikalischer Guard', 'Plasma energy → physical guard'),
+        f'{physical_min_plasma_gross:.1f} kWh/kg H₂ gross',
+        evaluate_hprs_case(physical_min_plasma_gross, h2_recovery, external_heat_kwh_gross, fc_eff),
+    ),
+    (
+        t('Fuel-Cell-Systemwirkungsgrad → 55%', 'Fuel-cell system efficiency → 55%'),
+        f'{100*priority_fc_target:.0f}%',
+        evaluate_hprs_case(plasma_kwh_gross, h2_recovery, external_heat_kwh_gross, priority_fc_target),
+    ),
+    (
+        t('H₂-Recovery → 95%', 'H₂ recovery → 95%'),
+        f'{100*priority_recovery_target:.0f}%',
+        evaluate_hprs_case(plasma_kwh_gross, priority_recovery_target, external_heat_kwh_gross, fc_eff),
+    ),
+    (
+        t('Externe Prozesswärme halbieren', 'Halve external process heat'),
+        f'{priority_heat_target:.2f} kWhₜₕ/kg',
+        evaluate_hprs_case(plasma_kwh_gross, h2_recovery, priority_heat_target, fc_eff),
+    ),
+]
+
+priority_rows = []
+for label, target, case in priority_cases:
+    energy_improvement = 100.0 * (baseline_case['energy_kwh_km'] - case['energy_kwh_km']) / max(baseline_case['energy_kwh_km'], 1e-12)
+    cost_improvement = 100.0 * (baseline_case['cost_chf_km'] - case['cost_chf_km']) / max(baseline_case['cost_chf_km'], 1e-12) if baseline_case['cost_chf_km'] > 0 else 0.0
+    priority_rows.append({
+        t('Hebel', 'Lever'): label,
+        t('Einzelziel', 'One-at-a-time target'): target,
+        t('HPRS Energie (kWh/km)', 'HPRS energy (kWh/km)'): case['energy_kwh_km'],
+        t('HPRS→DC (%)', 'HPRS→DC (%)'): 100.0 * case['system_eff'],
+        t('Kosten (CHF/km)', 'Cost (CHF/km)'): case['cost_chf_km'],
+        t('Energieverbesserung (%)', 'Energy improvement (%)'): energy_improvement,
+        t('Kostenverbesserung (%)', 'Cost improvement (%)'): cost_improvement,
+    })
+priority_df = pd.DataFrame(priority_rows).sort_values(t('Energieverbesserung (%)', 'Energy improvement (%)'), ascending=False)
+first_priority = priority_df.iloc[0][t('Hebel', 'Lever')] if not priority_df.empty else t('Keine', 'None')
+
+# -----------------------------
 # Public guideposts
 # -----------------------------
 st.markdown("---")
@@ -490,10 +620,142 @@ if math.isfinite(break_even_electricity):
     )
 
 # -----------------------------
+# V1.2 CEO decision dashboard
+# -----------------------------
+st.markdown("---")
+st.subheader(t("6 · V1.2 CEO Decision Dashboard — Break-even & Entwicklungsziele", "6 · V1.2 CEO decision dashboard — break-even & development targets"))
+
+q1, q2, q3, q4 = st.columns(4)
+q1.metric(t("HPRS-H₂ Kosten heute", "Current HPRS H₂ cost"), f"CHF {hprs_h2_cost_per_delivered:.2f}/kg")
+q2.metric(t("Gelieferter H₂ Benchmark", "Delivered H₂ benchmark"), f"CHF {h2_price_chf_kg:.2f}/kg")
+q3.metric(t("Break-even Strompreis heute", "Current break-even electricity"), f"CHF {break_even_electricity:.3f}/kWh" if math.isfinite(break_even_electricity) else "N/A")
+q4.metric(t("Max. Plasma für Kostenparität", "Max plasma for cost parity"), f"{max_plasma_for_cost_parity:.1f} kWh/kg" if math.isfinite(max_plasma_for_cost_parity) else "N/A")
+
+q5, q6, q7, q8 = st.columns(4)
+q5.metric(t("Physikalischer Plasma-Guard", "Physical plasma guard"), f"{physical_min_plasma_gross:.1f} kWh/kg")
+q6.metric(t("Thermo-Minimum geliefert", "Thermo minimum delivered"), f"{physical_min_total_delivered:.1f} kWh/kg")
+q7.metric(t("Erforderliche Recovery heute", "Required recovery today"), f"{100*required_recovery_for_cost_parity:.1f}%" if math.isfinite(required_recovery_for_cost_parity) else "N/A")
+q8.metric(t("Recovery am phys. Floor", "Recovery at physical floor"), f"{100*required_recovery_at_physical_floor:.1f}%" if math.isfinite(required_recovery_at_physical_floor) else "N/A")
+
+if cost_parity_inside_thermo_guard:
+    st.success(
+        t(
+            f"Kostenparität liegt unter den gewählten Preisannahmen innerhalb des einfachen Thermo-Guards: maximal {max_plasma_for_cost_parity:.1f} kWh/kg H₂ gross gegenüber einem physikalischen Mindestwert von {physical_min_plasma_gross:.1f} kWh/kg. Das ist nur eine Betriebskosten-Gleichung — CAPEX, Kompression, Speicher, Wartung und Degradation fehlen.",
+            f"Under the selected price assumptions, cost parity lies inside the simple thermodynamic guard: maximum {max_plasma_for_cost_parity:.1f} kWh/kg gross H₂ versus a physical minimum of {physical_min_plasma_gross:.1f} kWh/kg. This is an operating-cost equation only — CAPEX, compression, storage, maintenance and degradation are excluded."
+        )
+    )
+else:
+    st.error(
+        t(
+            f"CEO-Kernaussage: Bei den aktuell gewählten Preisen verlangt Kostenparität höchstens {max_plasma_for_cost_parity:.1f} kWh/kg H₂ gross, der einfache physikalische Guard liegt aber bei {physical_min_plasma_gross:.1f} kWh/kg. Kostenparität ist damit in dieser Kombination nicht erreichbar. Selbst am physikalischen Floor müsste der Strompreis ungefähr ≤ CHF {physical_floor_break_even_electricity:.3f}/kWh sein oder der H₂-Benchmark mindestens CHF {physical_floor_h2_cost:.2f}/kg betragen — vor CAPEX und Balance-of-Plant.",
+            f"CEO takeaway: at the selected prices, cost parity requires at most {max_plasma_for_cost_parity:.1f} kWh/kg gross H₂, while the simple physical guard is {physical_min_plasma_gross:.1f} kWh/kg. Cost parity is therefore not reachable with this combination. Even at the physical floor, electricity would need to be about ≤ CHF {physical_floor_break_even_electricity:.3f}/kWh or the H₂ benchmark at least CHF {physical_floor_h2_cost:.2f}/kg — before CAPEX and balance-of-plant."
+        )
+    )
+
+st.markdown(f"#### {t('Entwicklungsleiter — analytische Referenzpunkte', 'Development ladder — analytical reference points')}")
+roadmap = pd.DataFrame([
+    {
+        t('Punkt', 'Point'): t('Aktuell gewählt', 'Current selected'),
+        t('Plasma kWh/kg gross', 'Plasma kWh/kg gross'): plasma_kwh_gross,
+        t('Recovery', 'Recovery'): 100*h2_recovery,
+        t('Wärme kWh/kg gross', 'Heat kWh/kg gross'): external_heat_kwh_gross,
+        t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg'): reactor_total_per_delivered_h2,
+        t('HPRS→FC DC', 'HPRS→FC DC'): 100*reactor_to_dc_eff,
+        t('H₂ Kosten CHF/kg', 'H₂ cost CHF/kg'): hprs_h2_cost_per_delivered,
+    },
+    {
+        t('Punkt', 'Point'): t('Prototype Preset', 'Prototype preset'),
+        t('Plasma kWh/kg gross', 'Plasma kWh/kg gross'): prototype_plasma,
+        t('Recovery', 'Recovery'): 100*prototype_recovery,
+        t('Wärme kWh/kg gross', 'Heat kWh/kg gross'): prototype_heat,
+        t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg'): prototype_total_delivered,
+        t('HPRS→FC DC', 'HPRS→FC DC'): 100*prototype_eff,
+        t('H₂ Kosten CHF/kg', 'H₂ cost CHF/kg'): prototype_h2_cost,
+    },
+    {
+        t('Punkt', 'Point'): t('Thermo-Floor @ gewählter Recovery', 'Thermo floor @ selected recovery'),
+        t('Plasma kWh/kg gross', 'Plasma kWh/kg gross'): physical_min_plasma_gross,
+        t('Recovery', 'Recovery'): 100*h2_recovery,
+        t('Wärme kWh/kg gross', 'Heat kWh/kg gross'): external_heat_kwh_gross,
+        t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg'): physical_min_total_delivered,
+        t('HPRS→FC DC', 'HPRS→FC DC'): 100*(fc_dc_per_delivered_h2/max(physical_min_total_delivered,1e-12)),
+        t('H₂ Kosten CHF/kg', 'H₂ cost CHF/kg'): physical_floor_h2_cost,
+    },
+    {
+        t('Punkt', 'Point'): t('Ideal 298 K Referenz', 'Ideal 298 K reference'),
+        t('Plasma kWh/kg gross', 'Plasma kWh/kg gross'): WATER_SPLIT_DG_KWH_PER_KG_H2,
+        t('Recovery', 'Recovery'): 100.0,
+        t('Wärme kWh/kg gross', 'Heat kWh/kg gross'): ideal_heat,
+        t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg'): ideal_total_delivered,
+        t('HPRS→FC DC', 'HPRS→FC DC'): 100*ideal_eff_current_fc,
+        t('H₂ Kosten CHF/kg', 'H₂ cost CHF/kg'): ideal_h2_cost,
+    },
+])
+st.dataframe(
+    roadmap.style.format({
+        t('Plasma kWh/kg gross', 'Plasma kWh/kg gross'): '{:.2f}',
+        t('Recovery', 'Recovery'): '{:.1f}%',
+        t('Wärme kWh/kg gross', 'Heat kWh/kg gross'): '{:.2f}',
+        t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg'): '{:.2f}',
+        t('HPRS→FC DC', 'HPRS→FC DC'): '{:.1f}%',
+        t('H₂ Kosten CHF/kg', 'H₂ cost CHF/kg'): '{:.2f}',
+    }),
+    use_container_width=True,
+    hide_index=True,
+)
+
+roadmap_chart = roadmap[[t('Punkt', 'Point'), t('Gesamt geliefert kWh/kg', 'Total delivered kWh/kg')]].set_index(t('Punkt', 'Point'))
+st.bar_chart(roadmap_chart, height=300)
+st.caption(
+    t(
+        'Die Leiter trennt aktuelle Annahmen, Prototype-Preset und thermodynamische Referenzen. Der 298-K-Punkt ist kein erreichter Reaktorwert, sondern die Standardzustands-Grenze ΔG + Wärmeanteil = ΔH.',
+        'The ladder separates current assumptions, the prototype preset and thermodynamic references. The 298 K point is not an achieved reactor value; it is the standard-state boundary ΔG + heat contribution = ΔH.'
+    )
+)
+
+st.markdown(f"#### {t('Was muss zuerst besser werden?', 'What must improve first?')}")
+st.dataframe(
+    priority_df.style.format({
+        t('HPRS Energie (kWh/km)', 'HPRS energy (kWh/km)'): '{:.2f}',
+        t('HPRS→DC (%)', 'HPRS→DC (%)'): '{:.1f}',
+        t('Kosten (CHF/km)', 'Cost (CHF/km)'): '{:.2f}',
+        t('Energieverbesserung (%)', 'Energy improvement (%)'): '{:+.1f}',
+        t('Kostenverbesserung (%)', 'Cost improvement (%)'): '{:+.1f}',
+    }),
+    use_container_width=True,
+    hide_index=True,
+)
+st.markdown(
+    f"""
+    <div class="hprs-note">
+      <b>{t('Priorität aus dem aktuellen Betriebspunkt:', 'Priority from the current operating point:')}</b> {first_priority}.<br>
+      {t(
+        'Die Rangfolge ist ein One-at-a-time Screening: jeweils nur ein Parameter wird auf das angegebene Forschungsziel verschoben. Sie ist keine Optimierung und keine Erfolgswahrscheinlichkeit.',
+        'The ranking is a one-at-a-time screen: only one parameter is moved to the stated research target at a time. It is not an optimization and not a probability of success.'
+      )}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    f"""
+    <div class="hprs-dark">
+      <b>{t('CEO-Entscheidungslogik:', 'CEO decision logic:')}</b><br>
+      {t(
+        f'1) Erst spezifische Plasmaenergie und H₂-Recovery messen. 2) Danach prüfen, ob der kombinierte Punkt innerhalb der Thermo-Guards liegt. 3) Erst dann Kostenparität mit Strompreis und H₂-Benchmark bewerten. Der aktuelle Modellpunkt produziert H₂ zu rund CHF {hprs_h2_cost_per_delivered:.2f}/kg; der Prototype-Preset liegt unter denselben Preisannahmen bei rund CHF {prototype_h2_cost:.2f}/kg.',
+        f'1) Measure specific plasma energy and H₂ recovery first. 2) Then verify that the combined point lies inside the thermodynamic guards. 3) Only then evaluate cost parity against electricity price and delivered-H₂ benchmark. The current model point produces H₂ at about CHF {hprs_h2_cost_per_delivered:.2f}/kg; the prototype preset is about CHF {prototype_h2_cost:.2f}/kg under the same price assumptions.'
+      )}
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# -----------------------------
 # Collaboration screen
 # -----------------------------
 st.markdown("---")
-st.subheader(t("6 · Kooperationsfall — was ein Rail-OEM beitragen kann", "6 · Collaboration case — what a rail OEM can contribute"))
+st.subheader(t("7 · Kooperationsfall — was ein Rail-OEM beitragen kann", "7 · Collaboration case — what a rail OEM can contribute"))
 colA, colB, colC = st.columns(3)
 with colA:
     st.markdown(
@@ -580,7 +842,7 @@ with st.expander(t("Modellgrenzen & öffentliche Quellen", "Model boundaries & p
 
 st.caption(
     t(
-        "HydrogenOrg HPRS Rail Research Simulator V1.1 · Forschungsmodell — keine zertifizierte Leistungsangabe.",
-        "HydrogenOrg HPRS Rail Research Simulator V1.1 · research model — not a certified performance claim.",
+        "HydrogenOrg HPRS Rail Research Simulator V1.2 · Forschungsmodell — keine zertifizierte Leistungsangabe.",
+        "HydrogenOrg HPRS Rail Research Simulator V1.2 · research model — not a certified performance claim.",
     )
 )
