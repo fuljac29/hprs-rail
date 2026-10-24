@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 
 # ============================================================
-# HydrogenOrg HPRS Rail Research Simulator V1.0
+# HydrogenOrg HPRS Rail Research Simulator V1.1
 # Dedicated rail application — research / scenario model only.
 # ============================================================
 
@@ -57,25 +57,60 @@ st.markdown(
     """
     <style>
       :root{
-        --ink:#071521; --muted:#5b7182; --cyan:#08a6df; --green:#58b23a;
-        --orange:#ef7b23; --line:#dbe8ef; --soft:#f5f9fb; --navy:#06111f;
+        --ink:#071521; --paper:#f8fbfd; --muted:#60788a; --cyan:#19b6ee; --green:#6bc247;
+        --orange:#f59e42; --line:#d9e6ee; --soft:#f3f8fb; --navy:#07111e; --page:#0b111a;
       }
+      /* V1.1: keep the rail simulator readable even when Streamlit/browser uses dark mode. */
+      .stApp, [data-testid="stAppViewContainer"]{background:var(--page);color:#eef7fb;}
+      [data-testid="stSidebar"]{background:#20232d;}
       .block-container{max-width:1480px;padding-top:1rem;padding-bottom:3rem;}
-      h1,h2,h3,h4{color:var(--ink);}
+      h1,h2,h3,h4{color:#f4fbff !important;}
+      p, li{color:#d4e1e8;}
+      [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p{color:#aebfca !important;}
       .hprs-kicker{font-size:.78rem;letter-spacing:.14rem;font-weight:900;color:var(--green);text-transform:uppercase;}
-      .hprs-title{font-size:2.8rem;line-height:1.02;font-weight:950;color:var(--ink);margin:.25rem 0 .6rem;}
+      .hprs-title{font-size:2.8rem;line-height:1.02;font-weight:950;color:#f7fcff;margin:.25rem 0 .6rem;}
       .hprs-title span{color:var(--cyan);}
-      .hprs-sub{font-size:1.05rem;line-height:1.65;color:var(--muted);max-width:1050px;}
-      .hprs-card{border:1px solid var(--line);border-radius:18px;background:#fff;padding:1rem 1.1rem;box-shadow:0 8px 22px rgba(5,25,40,.04);}
-      .hprs-note{border-left:4px solid var(--cyan);background:#f2f9fd;border-radius:10px;padding:.85rem 1rem;color:#476577;line-height:1.55;}
-      .hprs-warn{border-left:4px solid var(--orange);background:#fff7ed;border-radius:10px;padding:.85rem 1rem;color:#705744;line-height:1.55;}
-      .hprs-dark{background:var(--navy);color:#fff;border-radius:16px;padding:1rem 1.15rem;}
+      .hprs-sub{font-size:1.05rem;line-height:1.65;color:#a9c0cf;max-width:1050px;}
+      .hprs-card{border:1px solid var(--line);border-radius:18px;background:#fff;padding:1rem 1.1rem;box-shadow:0 10px 28px rgba(0,0,0,.18);color:var(--ink);}
+      .hprs-card h1,.hprs-card h2,.hprs-card h3,.hprs-card h4{color:var(--ink) !important;}
+      .hprs-card p,.hprs-card li,.hprs-card .hprs-small{color:#526b7c !important;}
+      .hprs-note{border-left:4px solid var(--cyan);background:#edf8fd;border-radius:10px;padding:.85rem 1rem;color:#2f5c73;line-height:1.55;}
+      .hprs-note b{color:#173d50;}
+      .hprs-warn{border-left:4px solid var(--orange);background:#fff4e8;border-radius:10px;padding:.85rem 1rem;color:#684928;line-height:1.55;}
+      .hprs-warn b{color:#4e3218;}
+      .hprs-dark{background:#06111f;color:#fff;border:1px solid #1a3346;border-radius:16px;padding:1rem 1.15rem;}
       .hprs-dark b{color:#7dd3fc;}
       .hprs-chip{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:999px;padding:.32rem .6rem;margin:.18rem .22rem .18rem 0;font-size:.76rem;font-weight:800;color:var(--ink);}
-      .hprs-small{font-size:.82rem;color:var(--muted);line-height:1.5;}
-      div[data-testid="stMetric"]{background:#fff;border:1px solid var(--line);padding:.8rem;border-radius:15px;}
-      div[data-testid="stMetricLabel"]{font-weight:750;}
+      .hprs-small{font-size:.82rem;color:#9fb5c3;line-height:1.5;}
+
+      /* Metric cards: force high contrast independent of Streamlit theme. */
+      div[data-testid="stMetric"]{
+        background:#f9fcfe !important;
+        border:1px solid #cfe0ea !important;
+        padding:.9rem .95rem !important;
+        border-radius:16px !important;
+        box-shadow:0 8px 20px rgba(0,0,0,.16);
+        min-height:112px;
+      }
+      div[data-testid="stMetric"] *{color:var(--ink) !important;}
+      div[data-testid="stMetricLabel"]{font-weight:800 !important;}
+      div[data-testid="stMetricLabel"] p{
+        color:#526b7c !important;
+        font-size:.82rem !important;
+        line-height:1.22 !important;
+      }
+      div[data-testid="stMetricValue"]{font-weight:900 !important;}
+      div[data-testid="stMetricValue"] > div,
+      div[data-testid="stMetricValue"] span{
+        color:#071521 !important;
+        font-size:1.65rem !important;
+        line-height:1.08 !important;
+      }
+      div[data-testid="stMetricDelta"] *{color:#1e7c48 !important;}
+
+      /* Dataframes/charts remain native, but text controls stay readable on dark canvas. */
       .stTabs [data-baseweb="tab"]{font-weight:800;}
+      .stMarkdown a{color:#55c8f3;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -545,7 +580,7 @@ with st.expander(t("Modellgrenzen & öffentliche Quellen", "Model boundaries & p
 
 st.caption(
     t(
-        "HydrogenOrg HPRS Rail Research Simulator V1.0 · Forschungsmodell — keine zertifizierte Leistungsangabe.",
-        "HydrogenOrg HPRS Rail Research Simulator V1.0 · research model — not a certified performance claim.",
+        "HydrogenOrg HPRS Rail Research Simulator V1.1 · Forschungsmodell — keine zertifizierte Leistungsangabe.",
+        "HydrogenOrg HPRS Rail Research Simulator V1.1 · research model — not a certified performance claim.",
     )
 )
