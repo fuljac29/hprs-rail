@@ -185,7 +185,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.1</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.2</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -298,7 +298,7 @@ st.markdown(
 )
 
 st.caption(
-    "V3.3.1 display optimization: long legacy and advanced-analysis sections are collapsed by default. "
+    "V3.3.2: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
@@ -2620,6 +2620,61 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
+# V3.3.2: Always-visible charts restored without expanding long analysis sections.
+st.markdown("---")
+st.subheader("Research graphics dashboard · V3.3.2")
+st.caption(
+    "These charts update with the sidebar assumptions. All automotive results use the same "
+    f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
+)
+_chart_paths = ["Conventional ICE", "Dry HPRS", "Gasoline + steam", "HPRS-W water"]
+_chart_costs = [norm_conv_cost_per_kwh, norm_dry_cost_per_kwh,
+                norm_steam_cost_per_kwh, norm_hprsw_cost_per_kwh]
+_chart_electric = [0.0, norm_dry_electric_per_kwh,
+                   norm_steam_electric_per_kwh, norm_hprsw_electric_per_kwh]
+_chart_summary = pd.DataFrame({
+    "Pathway": _chart_paths,
+    "CHF / kWh net shaft": _chart_costs,
+    "External electricity kWh / kWh net shaft": _chart_electric,
+}).set_index("Pathway")
+_ch1, _ch2 = st.columns(2)
+with _ch1:
+    st.markdown("**Operating-cost comparison**")
+    st.bar_chart(_chart_summary[["CHF / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=300)
+with _ch2:
+    st.markdown("**External electrical demand**")
+    st.bar_chart(_chart_summary[["External electricity kWh / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=300)
+st.caption(
+    "Electricity chart excludes chemical fuel energy and separately supplied heat; "
+    "use the detailed comparison for total energy and carbon accounting. "
+    "Unattainable/non-finite scenarios are omitted from bar heights."
+)
+
+if v29_thermo_points and v30_cost_eff_pareto_points:
+    st.markdown("**HPRS-W feasible region and Pareto frontier · overview**")
+    _preview_step = max(1, len(v29_thermo_points) // 700)
+    _pareto_preview = [
+        {"Cost CHF/kWh net": p["cost_per_net_kwh"],
+         "Efficiency %": 100.0 * p["system_eff"],
+         "Series": "Thermo-feasible"}
+        for p in v29_thermo_points[::_preview_step]
+    ]
+    _pareto_preview.extend(
+        {"Cost CHF/kWh net": p["cost_per_net_kwh"],
+         "Efficiency %": 100.0 * p["system_eff"],
+         "Series": "Pareto frontier"}
+        for p in v30_cost_eff_pareto_points
+    )
+    st.scatter_chart(pd.DataFrame(_pareto_preview), x="Cost CHF/kWh net",
+                     y="Efficiency %", color="Series", height=340)
+else:
+    st.info("No thermodynamically feasible Pareto points for the current search settings.")
+st.caption(
+    "The full Pareto, research-stretch, and theoretical diagnostics remain in the "
+    "'HPRS-W advanced theory, feasible-region and Pareto analysis' section below. "
+    "The Rail energy and cost graphs remain visible in the Rail section."
+)
+
 st.markdown("---")
 with st.expander("Automotive / legacy pathway results — open when needed", expanded=False):
     st.caption(f"Current comparison focus: **{comparison_focus}**")
@@ -3489,6 +3544,10 @@ for _f_khz in _v33_freqs:
         "Gross H2 capacity (kg/h)": _gross_capacity,
         "Delivered H2 capacity (kg/h)": _delivered_capacity,
     })
+
+st.markdown("##### RF pulse frequency · H₂ output capacity")
+st.line_chart(pd.DataFrame(_v33_rows).set_index("Pulse envelope (kHz)")[["Delivered H2 capacity (kg/h)"]], height=280)
+st.caption("Capacity scaling only: constant pulse width, peak RF power, coupling and specific energy; not an efficiency gain.")
 
 with st.expander("V3.3 pulse-frequency capacity sweep", expanded=False):
     st.caption(
