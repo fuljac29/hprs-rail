@@ -103,7 +103,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.3.6 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.3.7 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -183,6 +183,262 @@ def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_ra
     return entries
 
 
+# ============================================================
+# V3.3.7 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
+# Synthetic monthly representative days, not measured PVGIS weather.
+# Financial outputs must not be mistaken for validated plant LCOH.
+# ============================================================
+RAIL_MONTH_DAYS = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+RAIL_MONTH_NAMES = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+# Illustrative mid-latitude Northern Hemisphere solar shares, normalized at runtime.
+RAIL_MONTH_PV_WEIGHTS = (2.5, 4.2, 7.6, 10.2, 12.5, 14.0, 14.0, 12.5, 9.6, 6.6, 3.8, 2.5)
+RAIL_DAYLIGHT_HOURS = (8.6, 9.8, 11.5, 13.2, 14.5, 15.4, 15.0, 13.7, 12.1, 10.5, 9.1, 8.2)
+
+
+def rail_v337_monthly_dispatch(pv_kwp, annual_solar_irradiation_kwh_kwp, performance_ratio,
+                               geothermal_kwh_day, battery_kwh, battery_kw, battery_eff,
+                               operating_days_year, h2_day, process_sec, operation_hours,
+                               surplus_mode='Curtail', extra_plant_kg_h=0.0,
+                               extra_offtake_kg_day=0.0):
+    """Representative 24h/mth profiles with repeating-day SOC; separate 365-day PV and operating-day H2.
+
+    Every PV kWh is assigned to the load, battery, extra H2 or surplus exactly once.
+    Demand is met by grid whenever direct renewable supply + discharged battery fall short.
+    """
+    pv_kwp = max(0.0, pv_kwp)
+    operating_fraction = min(max(operating_days_year / 365.0, 0.0), 1.0)
+    total_weight = sum(RAIL_MONTH_PV_WEIGHTS)
+    annual_pv_kwh = pv_kwp * annual_solar_irradiation_kwh_kwp * performance_ratio
+    eff = math.sqrt(max(battery_eff, 1e-8))
+    use_battery = battery_kwh > 0.0 and battery_kw > 0.0
+    op_hour = max(1, min(24, int(operation_hours)))
+    first_op_hour = max(0, (24 - op_hour) // 2)
+    op_set = set(range(first_op_hour, first_op_hour + op_hour))
+    annual = dict(pv_kwh=0.0, geo_kwh=0.0, grid_kwh=0.0,
+                  direct_kwh=0.0, charge_kwh=0.0, discharge_kwh=0.0,
+                  curtailed_kwh=0.0, extra_h2_kg=0.0, extra_h2_electric_kwh=0.0,
+                  rail_h2_kg=0.0)
+    monthly = []
+    for m, day_count in enumerate(RAIL_MONTH_DAYS):
+        pv_day = annual_pv_kwh * RAIL_MONTH_PV_WEIGHTS[m] / total_weight / day_count
+        daylight = RAIL_DAYLIGHT_HOURS[m]
+        weights = [max(0.0, math.sin(math.pi * ((h + 0.5) - (12.0-daylight/2.0)) / daylight))
+                   for h in range(24)]
+        norm = sum(weights)
+        pv_hour = [pv_day * x / max(norm, 1e-9) for x in weights]
+        geo_hour = geothermal_kwh_day / 24.0
+        per_op_load = h2_day * process_sec / op_hour
+
+        def one_day(is_operating):
+            # Resolve repeating day initial SOC before counting energy. No multi-day energy creation.
+            soc = battery_kwh * 0.5 if use_battery else 0.0
+            def iterate(initial_soc, count):
+                soc_now = initial_soc
+                counts = dict(pv_kwh=pv_day, geo_kwh=geothermal_kwh_day,
+                              grid_kwh=0.0, direct_kwh=0.0, charge_kwh=0.0,
+                              discharge_kwh=0.0, curtailed_kwh=0.0, extra_h2_kg=0.0,
+                              extra_h2_electric_kwh=0.0, rail_h2_kg=h2_day if is_operating else 0.0)
+                extra_remaining = extra_offtake_kg_day
+                for h in range(24):
+                    load = per_op_load if is_operating and h in op_set else 0.0
+                    available = pv_hour[h] + geo_hour
+                    direct = min(available, load)
+                    rem = available - direct
+                    shortage = load - direct
+                    charged = 0.0
+                    discharged = 0.0
+                    if use_battery:
+                        charged = min(rem, battery_kw, max(battery_kwh-soc_now, 0.0)/eff)
+                        soc_now += charged * eff
+                        rem -= charged
+                        discharged = min(shortage, battery_kw, soc_now*eff)
+                        soc_now -= discharged/eff
+                        shortage -= discharged
+                    extra = 0.0
+                    if surplus_mode == 'Extra H₂ sale' and extra_plant_kg_h > 0 and process_sec > 0:
+                        extra = min(rem/process_sec, extra_plant_kg_h, extra_remaining)
+                        rem -= extra*process_sec
+                        extra_remaining -= extra
+                    counts['grid_kwh'] += shortage
+                    counts['direct_kwh'] += direct
+                    counts['charge_kwh'] += charged
+                    counts['discharge_kwh'] += discharged
+                    counts['curtailed_kwh'] += rem
+                    counts['extra_h2_kg'] += extra
+                    counts['extra_h2_electric_kwh'] += extra * process_sec
+                return soc_now, counts
+            # Let SOC settle to a cyclic orbit; unused idle days are independently settled.
+            if use_battery:
+                for j in range(25):
+                    next_soc, _ = iterate(soc, j)
+                    if abs(next_soc-soc) < 1e-5:
+                        soc = next_soc
+                        break
+                    soc = next_soc
+            _, tallies = iterate(soc, 99)
+            return tallies
+
+        operating = one_day(True)
+        idle = one_day(False)  # Additional separately funded H2 line may operate off-days.
+        # Identical operating fraction in every month; 365 calendar days of PV CAPEX.
+        operating_days = day_count * operating_fraction
+        off_days = day_count - operating_days
+        row = {k: operating[k]*operating_days + idle[k]*off_days for k in annual}
+        for k in annual:
+            annual[k] += row[k]
+        monthly.append({'Month': RAIL_MONTH_NAMES[m], 'Month days': day_count,
+                        'Operating days': operating_days,
+                        'PV MWh': row['pv_kwh']/1000.0,
+                        'Grid MWh': row['grid_kwh']/1000.0,
+                        'Direct MWh': row['direct_kwh']/1000.0,
+                        'Battery charge MWh': row['charge_kwh']/1000.0,
+                        'Surplus MWh': row['curtailed_kwh']/1000.0,
+                        'Extra H₂ kg': row['extra_h2_kg'],
+                        'Rail H₂ kg': row['rail_h2_kg']})
+    annual['monthly_rows'] = monthly
+    return annual
+
+
+def rail_v337_evaluate(area_site_m2, technology, with_geothermal, battery_active, config):
+    """Annual full-cost PV-area scenario; no monetized unbuilt/unsold capacity."""
+    density_kwp_m2 = config['panel_w_m2'] / 1000.0 / config['spacing_factor']
+    pv_kwp = max(0.0, area_site_m2) * density_kwp_m2
+    sec = config['hprs_sec'] if technology == 'HPRS-W' else config['pem_sec']
+    battery_kwh = config['battery_kwh'] if battery_active else 0.0
+    battery_kw = config['battery_kw'] if battery_active else 0.0
+    with_geo = with_geothermal and config['geo_fraction'] > 0
+    geo_day = config['geo_net_day'] * config['geo_fraction'] if with_geo else 0.0
+    dispatch = rail_v337_monthly_dispatch(
+        pv_kwp, config['irradiation'], config['pv_pr'], geo_day, battery_kwh,
+        battery_kw, config['battery_eff'], config['days'], config['rail_kg_day'],
+        sec, config['operation_hours'], config['surplus_mode'],
+        config['extra_h2_capacity_h'], config['extra_h2_offtake_day'],
+    )
+    annual_rail = dispatch['rail_h2_kg']
+    annual_extra = dispatch['extra_h2_kg']
+    if annual_rail <= 1e-9:
+        raise ValueError('A positive annual rail H₂ demand is required.')
+    owned = config['owned']
+    # Original installed PV CAPEX becomes a documented CHF/kWp basis for scalable area.
+    pv_capex = (pv_kwp * config['pv_capex_per_kwp'] * config['pv_capex_allocation']) if owned else 0.0
+    reactor_capex = config['hprs_capex'] if technology == 'HPRS-W' else config['pem_capex']
+    # Making the same daily H2 output in fewer hours requires larger nameplate capacity.
+    size_ratio = 24.0 / config['operation_hours']
+    reactor_capex = reactor_capex * size_ratio ** config['size_exponent']
+    # If output is concentrated, the storage buffer for H2 delivery must be costed.
+    storage_buffer_kg = (config['rail_kg_day'] * (1.0 - config['operation_hours']/24.0))
+    storage_capex = storage_buffer_kg * config['storage_chf_kg']
+    extra_capex = (config['extra_h2_capex'] if config['surplus_mode'] == 'Extra H₂ sale' else 0.0)
+    caps = {
+        'Reactor H₂': reactor_capex,
+        'PV allocated': pv_capex,
+        'Battery allocated': config['battery_capex'] * config['battery_allocation'] if battery_active else 0.0,
+        'Geothermal allocated': config['geo_capex'] if with_geo and owned else 0.0,
+        'H₂ storage buffer': storage_capex,
+        'Extra H₂ line': extra_capex,
+        'PV site preparation': (area_site_m2 * config['land_prep_chf_m2'] if owned else 0.0),
+    }
+    lives = {'Reactor H₂':config['reactor_life'], 'PV allocated':config['pv_life'],
+             'Battery allocated': config['battery_life'], 'Geothermal allocated':config['geo_life'],
+             'H₂ storage buffer':config['storage_life'], 'Extra H₂ line':config['reactor_life'],
+             'PV site preparation':config['pv_life']}
+    details = rail_asset_cost_schedule(caps, lives, config['interest'])
+    cap_annuity = sum(row['Economic annuity CHF/year'] for row in details)
+    maintenance = (reactor_capex * config['reactor_opex']
+                   + pv_capex * config['pv_opex']
+                   + caps['Battery allocated'] * config['battery_opex']
+                   + (config['geo_opex'] if with_geo and owned else 0.0)
+                   + storage_capex * config['storage_opex']
+                   + extra_capex * config['reactor_opex']
+                   + (area_site_m2 * config['land_lease_chf_m2_year'] if owned else 0.0))
+    process_fixed = config['rail_kg_day'] * config['days'] * config['other_opex_chf_kg']
+    annual_grid = dispatch['grid_kwh'] * config['grid_price']
+    annual_transfer = ((dispatch['direct_kwh'] + dispatch['charge_kwh']
+                        + dispatch['extra_h2_electric_kwh']) * config['transfer_price']
+                       if not owned else 0.0)
+    heat_per_kg = config['hprs_heat_per_kg'] if technology == 'HPRS-W' else 0.0
+    heat_needed = heat_per_kg * (annual_rail + annual_extra)
+    available_geothermal_heat = (config['geo_heat_day'] * config['days'] if with_geo and technology == 'HPRS-W' else 0.0)
+    geo_heat_used = min(heat_needed, available_geothermal_heat)
+    geo_heat_for_rail = min(heat_per_kg*annual_rail, available_geothermal_heat)
+    purchase_heat = max(0.0, heat_needed - geo_heat_used) * config['heat_price']
+    geothermal_heat_contract = geo_heat_used * config['geo_heat_transfer'] if not owned else 0.0
+    h2_process_variable = (annual_rail + annual_extra) * (
+        config['hprs_consumables_chfkg'] if technology == 'HPRS-W' else config['pem_consumables_chfkg'])
+    variable = (annual_grid + annual_transfer + process_fixed
+                + purchase_heat + geothermal_heat_contract + h2_process_variable
+                + annual_extra * config['extra_opex_chfkg'])
+    gross_cost = cap_annuity + maintenance + variable
+    # Do not charge optional surplus-H₂ equipment and extra conversion to Rail-only LCOH.
+    extra_capital = extra_capex * rail_capital_recovery_factor(config['interest'], config['reactor_life'])
+    extra_heat_purchase = (max(0.0, heat_needed-geo_heat_used)
+                           - max(0.0, heat_per_kg*annual_rail-geo_heat_for_rail)) * config['heat_price']
+    extra_geo_heat_transfer = ((geo_heat_used-geo_heat_for_rail)*config['geo_heat_transfer']
+                               if not owned else 0.0)
+    extra_variable = (annual_extra*(config['hprs_consumables_chfkg'] if technology == 'HPRS-W'
+                                    else config['pem_consumables_chfkg'])
+                      + annual_extra*config['extra_opex_chfkg'] + extra_heat_purchase
+                      + extra_geo_heat_transfer
+                      + (dispatch['extra_h2_electric_kwh']*config['transfer_price']
+                         if not owned else 0.0))
+    # This is the conservative rail-only cost with the full shared PV/geo/battery cost
+    # allocated to rail H2. Revenues never reduce this production cost.
+    rail_only_annual = gross_cost - extra_capital - extra_capex*config['reactor_opex'] - extra_variable
+    # Surplus cannot simultaneously be fed to the grid and converted into H₂.
+    if config['surplus_mode'] == 'Sell surplus electricity':
+        sale_revenue = dispatch['curtailed_kwh'] * config['export_price']
+    elif config['surplus_mode'] == 'Extra H₂ sale':
+        sale_revenue = annual_extra * config['extra_h2_sale_price']
+    else:
+        sale_revenue = 0.0
+    complete = reactor_capex > 0 and (not owned or pv_kwp <= 0 or pv_capex > 0)
+    if with_geo and owned and (config['geo_capex'] <= 0 or config['geo_opex'] <= 0):
+        complete = False
+    if battery_active and battery_kwh > 0 and caps['Battery allocated'] <= 0:
+        complete = False
+    if (not owned and config['transfer_price'] <= 0 and
+            (dispatch['direct_kwh'] + dispatch['charge_kwh']) > 0):
+        complete = False
+    if config['surplus_mode'] == 'Extra H₂ sale' and annual_extra > 0 and extra_capex <= 0:
+        complete = False
+    if config['operation_hours'] < 24 and storage_capex <= 0:
+        complete = False
+    return {
+        'Technology': technology,
+        'Scenario': ('PV + geo + battery' if with_geo and battery_active
+                     else 'PV + geo' if with_geo else 'PV + battery' if battery_active else 'PV only'),
+        'Site area m²': area_site_m2,
+        'Panel surface m²': area_site_m2 / config['spacing_factor'],
+        'PV site CAPEX CHF': caps['PV site preparation'],
+        'PV land annual lease CHF': (area_site_m2 * config['land_lease_chf_m2_year'] if owned else 0.0),
+        'PV kWp': pv_kwp,
+        'PV MWh/year': dispatch['pv_kwh']/1000.0,
+        'Grid MWh/year': dispatch['grid_kwh']/1000.0,
+        'Surplus MWh/year': dispatch['curtailed_kwh']/1000.0,
+        'Extra H₂ kg/year': annual_extra,
+        'Theoretical surplus H₂ kg/year ceiling': dispatch['curtailed_kwh']/max(sec,1e-9),
+        'Rail H₂ kg/year': annual_rail,
+        'Total H₂ kg/year': annual_rail + annual_extra,
+        'Annual CAPEX recovery CHF': cap_annuity,
+        'Fixed OPEX CHF/year': maintenance,
+        'Variable OPEX CHF/year': variable,
+        'Gross annual CHF': gross_cost,
+        'Rail only annual CHF': rail_only_annual,
+        'Gross rail LCOH CHF/kg': rail_only_annual / annual_rail,
+        'Blended H₂ LCOH CHF/kg': gross_cost / (annual_rail + annual_extra),
+        'Sales CHF/year': sale_revenue,
+        'Net site CHF per rail kg': (gross_cost - sale_revenue) / annual_rail,
+        'Complete': complete,
+        'Asset schedule': details,
+        'Monthly': dispatch['monthly_rows'],
+        'Energy residual MWh': (dispatch['pv_kwh'] + dispatch['geo_kwh']
+                                 - dispatch['direct_kwh'] - dispatch['charge_kwh']
+                                 - dispatch['extra_h2_electric_kwh']
+                                 - dispatch['curtailed_kwh'])/1000.0,
+        'grid_share': 100 * dispatch['grid_kwh'] / max(annual_rail*sec, 1e-12),
+    }
+
+
 # Public technology benchmarks used only as external reference guideposts.
 # U.S. DOE 2026 system targets: PEM ~51 kWh_e/kg H2; high-temperature
 # electrolysis ~36 kWh_e/kg H2 and ~44 kWh/kg H2 total energy.
@@ -256,7 +512,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.3.6: compact in-page navigation and readable chart areas. */
+    /* V3.3.7: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -272,7 +528,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.6</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.7</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -293,7 +549,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.3.6: compact section navigation. Internal anchors do not change model state.
+# V3.3.7: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -402,12 +658,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.3.6: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.3.7: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.3.6, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.3.7, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -1231,7 +1487,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.3.6 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
+    with st.expander("V3.3.7 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -2792,10 +3048,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.3.6: Always-visible charts and compact navigation; physics unchanged.
+# V3.3.7: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.3.6")
+st.subheader("Research graphics dashboard · V3.3.7")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -4426,7 +4682,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.3.6 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.3.7 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -4667,11 +4923,11 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.3.6 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.3.7 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.3.6)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.3.7)")
 st.caption(
     "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
     "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
@@ -5003,22 +5259,22 @@ with st.expander('Amortization formula, per-asset schedule, operating cost and p
     st.download_button(
         'Download full amortization and OPEX breakdown (CSV)',
         rh_line_df.to_csv(index=False).encode('utf-8'),
-        file_name='hydrogenorg_rail_amortization_v336.csv', mime='text/csv',
+        file_name='hydrogenorg_rail_amortization_v337.csv', mime='text/csv',
     )
     st.download_button(
         'Download selected 24 h dispatch (CSV)',
         rdisp.reset_index().to_csv(index=False).encode('utf-8'),
-        file_name='hydrogenorg_rail_dispatch_v336.csv', mime='text/csv',
+        file_name='hydrogenorg_rail_dispatch_v337.csv', mime='text/csv',
     )
 
 st.download_button(
     'Download all seven hydrogen cost alternatives (CSV)',
     rh_compare.to_csv(index=False).encode('utf-8'),
-    file_name='hydrogenorg_rail_all_pathways_v336.csv', mime='text/csv',
+    file_name='hydrogenorg_rail_all_pathways_v337.csv', mime='text/csv',
 )
 
 # ============================================================
-# V3.3.6 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# V3.3.7 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
 # No fictitious production gains or free renewable energy are assumed.
 # ============================================================
 st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
@@ -5052,7 +5308,7 @@ st.dataframe(
 st.download_button(
     'Download investment comparison (CSV)',
     rh_investment_df.to_csv(index=False).encode('utf-8'),
-    file_name='hydrogenorg_rail_investment_comparison_v336.csv', mime='text/csv',
+    file_name='hydrogenorg_rail_investment_comparison_v337.csv', mime='text/csv',
 )
 
 st.markdown('##### 12B · CHF 10/kg challenge — production utilisation and capital gap')
@@ -5151,23 +5407,203 @@ if rh_util_data:
     st.download_button(
         'Download utilisation sensitivity (CSV)',
         rh_util_df.to_csv(index=False).encode('utf-8'),
-        file_name='hydrogenorg_rail_utilisation_v336.csv', mime='text/csv',
+        file_name='hydrogenorg_rail_utilisation_v337.csv', mime='text/csv',
     )
 else:
     st.warning('Enter all necessary investment and operating costs before testing utilisation.')
+
+# ============================================================
+# 12D — V3.3.7 FULL-YEAR PV SITE AREA OPTIMIZATION
+# ============================================================
+st.markdown('##### 12D · PV surface optimizer — full-year solar, seasonal dispatch and excess output')
+st.caption(
+    'Find the lowest modeled CHF/kg and its site area in m². Synthetic 12-month representative days '
+    'include winter/summer daylight, PV production on all 365 days and independent rail operating days. '
+    'No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.'
+)
+with st.expander('Solar-site sizing, surplus production and finance settings · V3.3.7', expanded=True):
+    r37_a, r37_b, r37_c = st.columns(3)
+    with r37_a:
+        r37_irradiation = st.number_input('Annual irradiation proxy (kWh/kWp/year BEFORE performance ratio)', 500.0, 2100.0, 1250.0, 50.0, key='r37_irr')
+        r37_panel_w_m2 = st.number_input('PV module power density (Wp / m² panel)', 120.0, 300.0, 210.0, 10.0, key='r37_panel_density')
+        r37_spacing = st.slider('Installed site area / panel area (×)', 1.0, 4.0, 1.4, 0.1, key='r37_spacing')
+        r37_max_area = st.number_input('Maximum available solar site (m²)', 500.0, 300000.0, 25000.0, 500.0, key='r37_max_site')
+        r37_land_prep = st.number_input('Extra PV site works CAPEX (CHF/m², only if NOT in PV installed CAPEX)', 0.0, 500.0, 0.0, 5.0, key='r37_landprep')
+        r37_land_lease = st.number_input('Extra land lease / site expense (CHF/m²/year)', 0.0, 50.0, 0.0, 0.5, key='r37_landlease')
+    with r37_b:
+        r37_operating_hours = st.selectbox('H₂ reactor operation hours per operating day', [24, 16, 12, 10, 8, 6], index=0, key='r37_hours')
+        r37_size_exponent = st.slider('H₂ reactor CAPEX capacity-scaling exponent', 0.7, 1.0, 1.0, 0.05, key='r37_sizeexp')
+        r37_storage_chf_kg = st.number_input('H₂ day/night buffer installed CHF/kg capacity', 0.0, 10000.0, 900.0, 100.0, key='r37_storage_cost')
+        r37_storage_life = st.slider('H₂ buffer service life (years)', 5, 40, 20, 1, key='r37_storage_life')
+    with r37_c:
+        r37_surplus_mode = st.selectbox('Treatment of electricity exceeding rail load', ['Curtail', 'Sell surplus electricity', 'Extra H₂ sale'], key='r37_surplus_mode')
+        r37_export_price = st.number_input('Feed-in tariff (CHF/kWh), export mode', 0.0, 0.5, 0.05, 0.005, key='r37_export')
+        r37_extra_rate = st.number_input('ADDITIONAL H₂ line capacity (kg/h)', 0.0, 200.0, 10.0, 1.0, key='r37_extra_rate')
+        r37_extra_offtake = st.number_input('Contracted maximum extra H₂ sales (kg/operating day)', 0.0, 5000.0, 100.0, 20.0, key='r37_extra_offtake')
+        r37_extra_capex = st.number_input('Additional H₂ line installed CAPEX (CHF)', 0.0, 100000000.0, 300000.0, 50000.0, key='r37_extra_capex')
+        r37_extra_opex = st.number_input('Additional H₂ handling/storage OPEX (CHF/kg sold)', 0.0, 30.0, 1.0, 0.1, key='r37_extra_opex')
+        r37_extra_sale = st.number_input('Confirmed extra H₂ sale price (CHF/kg), revenue model', 0.0, 30.0, 8.0, 0.5, key='r37_saleprice')
+    r37_objective = st.selectbox(
+        'Optimization target',
+        ['Gross rail H₂ LCOH CHF/kg', 'Blended H₂ LCOH CHF/kg', 'Net site CHF per rail kg'],
+        index=0, key='r37_objective',
+        help='Gross is conservative; blended includes actual extra H₂ quantity and its costs. Net site accounts for export/sale revenue but is NOT the production cost of rail H₂.',
+    )
+    r37_sample_count = st.slider('PV surface optimization resolution (number of candidate areas)', 11, 51, 31, 2, key='r37_candidates')
+
+r37_config = {
+    'panel_w_m2':r37_panel_w_m2, 'spacing_factor':r37_spacing,
+    'land_prep_chf_m2':r37_land_prep, 'land_lease_chf_m2_year':r37_land_lease,
+    'irradiation':r37_irradiation, 'pv_pr':rh_pv_pr, 'days':rh_days,
+    'rail_kg_day':rh_daily_kg, 'hprs_sec':rh_hprs_sec, 'pem_sec':rh_pem_kwh_kg,
+    'operation_hours':r37_operating_hours, 'size_exponent':r37_size_exponent,
+    'battery_kwh':rh_battery_kwh, 'battery_kw':rh_battery_kw, 'battery_eff':rh_battery_eff,
+    'geo_net_day':rh_geo_net_electric_day, 'geo_fraction':rh_geo_alloc,
+    'pv_capex_per_kwp':rh_pv_capex/max(rh_pv_kwp, 1e-9),
+    'pv_capex_allocation':rh_pv_capex_alloc,
+    'battery_capex':rh_bat_capex, 'battery_allocation':rh_bat_capex_alloc,
+    'geo_capex':rh_geo_capex_allocated, 'geo_opex':rh_geo_opex_allocated,
+    'hprs_capex':rh_hprsw_capex, 'pem_capex':rh_pem_capex,
+    'reactor_life':rh_life_reactor, 'pv_life':rh_life_pv,
+    'battery_life':rh_life_battery, 'geo_life':rh_life_geo,
+    'interest':rh_interest, 'reactor_opex':rh_fixed_opex_fraction,
+    'pv_opex':rh_pv_opex_pct, 'battery_opex':rh_battery_opex_pct,
+    'owned':rh_owned_assets, 'grid_price':rh_grid_cost, 'transfer_price':rh_renew_value,
+    'heat_price':rh_purchased_heat_price, 'geo_heat_transfer':rh_geo_heat_value,
+    'geo_heat_day':rh_geo_eligible_heat_day, 'hprs_heat_per_kg':rh_hprsw_heat_req_day/max(rh_daily_kg, 1e-9),
+    'other_opex_chf_kg':rh_extra_chf_kg,
+    'hprs_consumables_chfkg':(
+        rh_hprs_water_m3_day * water_price_chf_m3 + rh_hprs_argon_kg_day * argon_price_chf_kg
+        - rh_hprs_o2_kg_day * oxygen_value_chf_kg
+    ) / max(rh_daily_kg, 1e-9),
+    'pem_consumables_chfkg':rh_pem_water_m3_day * water_price_chf_m3/max(rh_daily_kg, 1e-9),
+    'storage_chf_kg':r37_storage_chf_kg, 'storage_life':r37_storage_life,
+    'storage_opex':0.03,
+    'surplus_mode':r37_surplus_mode, 'export_price':r37_export_price,
+    'extra_h2_capacity_h':r37_extra_rate, 'extra_h2_offtake_day':r37_extra_offtake,
+    'extra_h2_capex':r37_extra_capex, 'extra_opex_chfkg':r37_extra_opex,
+    'extra_h2_sale_price':r37_extra_sale,
+}
+if rh_pv_kwp <= 0:
+    st.warning('Enter an installed PV reference capacity above zero in the sidebar to derive a reliable CHF/kWp basis.')
+if rh_pv_capex <= 0 and rh_owned_assets:
+    st.warning('PV installed CAPEX must be entered to rank owned PV alternatives.')
+if rh_days < 365:
+    st.caption(f'Operating H₂ production is {rh_days} days/year; solar continues on 365 days/year, even when the H₂ line is idle.')
+
+r37_areas = sorted(set([0.0, float(r37_max_area)] + [
+    float(r37_max_area)*k/(r37_sample_count-1) for k in range(r37_sample_count)
+] + [min(float(r37_max_area), rh_pv_kwp/(r37_panel_w_m2/1000.0/r37_spacing))]))
+r37_rows = []
+r37_best = []
+r37_variants = [('PEM', False, False), ('HPRS-W', False, False),
+                ('PEM', False, True), ('HPRS-W', False, True),
+                ('PEM', True, True), ('HPRS-W', True, True)]
+for r37_tech, r37_geo, r37_bat in r37_variants:
+    r37_tests = [rail_v337_evaluate(a, r37_tech, r37_geo, r37_bat, r37_config) for a in r37_areas]
+    for _result in r37_tests:
+        r37_rows.append({k:v for k,v in _result.items() if k not in ('Asset schedule','Monthly')})
+    r37_feasible = [r for r in r37_tests if r['Complete']]
+    if r37_feasible:
+        r37_best.append(min(r37_feasible, key=lambda x: x[r37_objective]))
+
+if not r37_best:
+    st.error('No fully costed alternative. Supply missing capital/maintenance or renewable transfer price first.')
+else:
+    r37_valid_rows = []
+    for r in sorted(r37_best, key=lambda x: x[r37_objective]):
+        r37_valid_rows.append({
+            'Configuration':f"{r['Scenario']} / {r['Technology']}",
+            'Optimal site m²':r['Site area m²'],
+            'Solar panel m²':r['Panel surface m²'],
+            'PV kWp':r['PV kWp'],
+            'Gross rail CHF/kg':r['Gross rail LCOH CHF/kg'],
+            'Blended H₂ CHF/kg':r['Blended H₂ LCOH CHF/kg'],
+            'Net site CHF/rail kg':r['Net site CHF per rail kg'],
+            'Extra H₂ kg/yr':r['Extra H₂ kg/year'],
+            'Theoretical surplus H₂ ceiling kg/yr':r['Theoretical surplus H₂ kg/year ceiling'],
+            'Surplus PV+geo MWh/yr':r['Surplus MWh/year'],
+            'Export/sales revenue CHF/yr':r['Sales CHF/year'],
+            'Grid MWh/yr':r['Grid MWh/year'],
+            'CHF 10 gross target': 'MEETS model threshold' if r['Gross rail LCOH CHF/kg'] < 10.0 else 'Not met',
+        })
+    r37_best_df = pd.DataFrame(r37_valid_rows)
+    st.dataframe(r37_best_df.style.format({
+        'Optimal site m²':'{:,.0f}', 'Solar panel m²':'{:,.0f}', 'PV kWp':'{:,.0f}',
+        'Gross rail CHF/kg':'{:,.2f}', 'Blended H₂ CHF/kg':'{:,.2f}',
+        'Net site CHF/rail kg':'{:,.2f}', 'Extra H₂ kg/yr':'{:,.0f}',
+        'Theoretical surplus H₂ ceiling kg/yr':'{:,.0f}',
+        'Surplus PV+geo MWh/yr':'{:,.1f}', 'Export/sales revenue CHF/yr':'{:,.0f}',
+        'Grid MWh/yr':'{:,.0f}',
+    }), width='stretch', hide_index=True)
+    r37_winner = min(r37_best, key=lambda x:x[r37_objective])
+    r37_c1, r37_c2, r37_c3, r37_c4 = st.columns(4)
+    r37_c1.metric('Optimal TOTAL SITE area', f"{r37_winner['Site area m²']:,.0f} m²")
+    r37_c2.metric('Installed PV power', f"{r37_winner['PV kWp']:,.0f} kWp")
+    r37_c3.metric('Gross rail cost', f"CHF {r37_winner['Gross rail LCOH CHF/kg']:,.2f}/kg")
+    r37_c4.metric('Excess electricity', f"{r37_winner['Surplus MWh/year']:,.0f} MWh/yr")
+    st.caption(f"Illustrative technical ceiling from still-unused energy: {r37_winner['Theoretical surplus H₂ kg/year ceiling']:,.0f} kg H₂/year, BEFORE a suitably sized additional line, storage and confirmed buyers. Actual additional produced in the selected scenario: {r37_winner['Extra H₂ kg/year']:,.0f} kg/year.")
+    r37_gap_chf_yr = max(0.0,(r37_winner['Gross rail LCOH CHF/kg']-10.0)*r37_winner['Rail H₂ kg/year'])
+    if r37_gap_chf_yr>0:
+        st.write(f"**Gap to CHF 10/kg:** CHF {r37_gap_chf_yr:,.0f}/year on current rail production. The investment, electricity or productivity assumptions must improve by at least this amount; the target is not inserted as an assumed outcome.")
+        r37_grid_kwh = r37_winner['Grid MWh/year'] * 1000.0
+        r37_required_grid_tariff = rh_grid_cost - r37_gap_chf_yr / max(r37_grid_kwh, 1e-9)
+        if r37_grid_kwh > 0 and r37_required_grid_tariff >= 0:
+            st.caption(f"If ALL else stayed unchanged, the modeled electricity purchase price would need to fall to CHF {r37_required_grid_tariff:.3f}/kWh (from CHF {rh_grid_cost:.3f}/kWh) to meet CHF 10/kg. This is a required price, not a market forecast.")
+        else:
+            st.caption('Even eliminating all grid electricity charges cannot close the current CHF 10/kg gap by itself. Reactor/PV CAPEX, fixed OPEX, validated conversion efficiency or utilization would also have to improve.')
+
+    if r37_winner['Gross rail LCOH CHF/kg'] < 10:
+        st.success('CHF 10/kg threshold is met IN THIS ILLUSTRATIVE FULL-COST MODEL; validate solar yield, CAPEX, plant SEC, demand and financing before claiming industrial competitiveness.')
+    else:
+        r37_best_gross = min(r37_best, key=lambda x: x['Gross rail LCOH CHF/kg'])
+        st.warning(f"CHF 10/kg is NOT reached in the current assumptions. Best gross rail option: {r37_best_gross['Scenario']} / {r37_best_gross['Technology']} at CHF {r37_best_gross['Gross rail LCOH CHF/kg']:,.2f}/kg. Do not treat revenues from surplus exports as a reduction of intrinsic hydrogen-production cost.")
+    r37_selected_option = st.selectbox('Inspect annual monthly balance for',
+                                      [f"{i+1}. {r['Scenario']} / {r['Technology']}" for i,r in enumerate(r37_best)], key='r37_display')
+    r37_selected = r37_best[int(r37_selected_option.split('.')[0])-1]
+    r37_month_df = pd.DataFrame(r37_selected['Monthly']).set_index('Month')
+    st.markdown('##### Annual / seasonal dispatch for the selected optimized configuration')
+    st.line_chart(r37_month_df[['PV MWh', 'Grid MWh', 'Surplus MWh']], height=350)
+    st.dataframe(r37_month_df.style.format('{:,.1f}'), width='stretch')
+    r37_graph = pd.DataFrame(r37_rows)
+    r37_graph = r37_graph[r37_graph['Complete']]
+    r37_graph['Configuration'] = r37_graph['Scenario'] + ' / ' + r37_graph['Technology']
+    if not r37_graph.empty:
+        st.markdown('##### Optimal surface curve — all PV area candidates')
+        st.line_chart(r37_graph.pivot(index='Site area m²', columns='Configuration', values=r37_objective), height=355)
+    r37_d1, r37_d2 = st.columns(2)
+    with r37_d1:
+        st.download_button('Download all area-cost scenarios (CSV)',
+            pd.DataFrame(r37_rows).to_csv(index=False).encode('utf-8'),
+            file_name='hydrogenorg_rail_pv_area_v337.csv',mime='text/csv')
+    with r37_d2:
+        st.download_button('Download monthly seasonal dispatch (CSV)',
+            r37_month_df.reset_index().to_csv(index=False).encode('utf-8'),
+            file_name='hydrogenorg_rail_seasons_v337.csv',mime='text/csv')
+    if r37_surplus_mode == 'Extra H₂ sale':
+        st.info('Extra H₂ counts ONLY where renewable surplus, additional hourly reactor capacity and daily sales offtake overlap. The extra production line CAPEX, variable handling and process electricity/heat are included. Blended CHF/kg is for rail PLUS extra H₂ output, NOT the rail-only LCOH. The sales price affects the separate net-site figure, not gross LCOH.')
+    elif r37_surplus_mode == 'Sell surplus electricity':
+        st.info('Feed-in sales are shown as separate site revenue, NOT a reduction in the gross cost of making H₂. Actual export capacity, tariffs and grid connection must be contracted.')
+    else:
+        st.caption('Excess kWh are curtailed — no fictitious income or H₂ production is credited. The theoretical extra H₂ ceiling before additional reactor costs is surplus kWh divided by process kWh/kg, but hour-by-hour feasibility is not guaranteed.')
+    st.caption('Optimization uses only the selected candidate-area grid and keeps annual Rail H₂ kg fixed. The model separately annualizes installation/site preparation and land lease. This is a representative-month sensitivity model: no hourly measured weather, snow, downtime correlations, financing taxes or land purchase costs. The site area is not just glass-module area; it includes the selected spacing ratio. PV CAPEX scales linearly from the base CAPEX/kWp in the sidebar. Geothermal owned-cost cases are EXCLUDED from ranking until CAPEX and fixed OPEX are entered.')
+    st.markdown('Source for the next validation stage: [European Commission PVGIS — site-specific monthly/hourly solar output](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis_en).')
+
+
 
 st.info(
     'Critical modelling limits: 365 operating days is not a verified PV/plant availability estimate. '
     'Annual production, demand, grid capacity, curtailment, winter solar irradiation, battery cycling, '
     'future battery replacement, permits, site-specific geothermal drilling and safety are NOT proven. '
+    'Section 12D provides a synthetic 12-month sensitivity, NOT an actual solar-year dataset. '
     'Zero geothermal costs and zero hydrogen-plant CAPEX invalidate an investment comparison. '
     'A target below CHF 10/kg must be DEMONSTRATED by validated technology and site data, not assumed.'
 )
 
 st.info(
     'Methodological boundaries: Geothermal V4.0 uses a simplified lumped heat-to-power model. '
-    'PV production is a repeated representative day, not a Swiss hourly weather year; neither winter production '
-    'nor seasonal PV/storage economics are captured. Grid back-up is permitted. '
+    'Sections 12–12C use a repeated representative day; 12D adds synthetic monthly daylight and solar-yield weights, '
+    'NOT a Swiss hourly weather dataset. Grid back-up is permitted. '
     'HPRS-W plasma consumption/recovery are unvalidated experimental inputs. '
     'In owned-asset mode, PV and geothermal electricity already carry their amortization and maintenance, '
     'so the renewable internal transfer price is NOT added. Under a renewable-energy supply contract, '
@@ -5671,4 +6107,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.3.6 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.3.7 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
