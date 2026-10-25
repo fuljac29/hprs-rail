@@ -5443,12 +5443,18 @@ with st.expander('Solar-site sizing, surplus production and finance settings · 
         r37_extra_capex = st.number_input('Additional H₂ line installed CAPEX (CHF)', 0.0, 100000000.0, 300000.0, 50000.0, key='r37_extra_capex')
         r37_extra_opex = st.number_input('Additional H₂ handling/storage OPEX (CHF/kg sold)', 0.0, 30.0, 1.0, 0.1, key='r37_extra_opex')
         r37_extra_sale = st.number_input('Confirmed extra H₂ sale price (CHF/kg), revenue model', 0.0, 30.0, 8.0, 0.5, key='r37_saleprice')
-    r37_objective = st.selectbox(
+    r37_objective_labels = {
+        'Gross rail H₂ LCOH CHF/kg': 'Gross rail LCOH CHF/kg',
+        'Blended H₂ LCOH CHF/kg': 'Blended H₂ LCOH CHF/kg',
+        'Net site CHF per rail kg': 'Net site CHF per rail kg',
+    }
+    r37_objective_label = st.selectbox(
         'Optimization target',
-        ['Gross rail H₂ LCOH CHF/kg', 'Blended H₂ LCOH CHF/kg', 'Net site CHF per rail kg'],
-        index=0, key='r37_objective',
+        list(r37_objective_labels.keys()),
+        index=0, key='r37_objective_label',
         help='Gross is conservative; blended includes actual extra H₂ quantity and its costs. Net site accounts for export/sale revenue but is NOT the production cost of rail H₂.',
     )
+    r37_objective = r37_objective_labels[r37_objective_label]
     r37_sample_count = st.slider('PV surface optimization resolution (number of candidate areas)', 11, 51, 31, 2, key='r37_candidates')
 
 r37_config = {
