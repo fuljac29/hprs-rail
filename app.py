@@ -103,7 +103,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.3.4 standalone renewable-rail depot: no additional modules required.
+# V3.3.5 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -154,6 +154,33 @@ def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
         'battery_start_kwh': start_soc, 'battery_end_kwh': soc,
         'specific_kwh_kg': specific_electricity_kwh_kg,
     }
+
+
+def rail_capital_recovery_factor(discount_rate, lifetime_years):
+    """Constant real annual payment / invested CHF. Straight-line depreciation is separate.
+
+    Rate is an annual fraction. At zero rate, capital recovery equals straight-line
+    depreciation; at positive rate it includes the required cost of capital.
+    """
+    n = max(int(lifetime_years), 1)
+    r = max(float(discount_rate), 0.0)
+    return 1.0 / n if r == 0 else r / (1.0 - (1.0 + r) ** (-n))
+
+
+def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_rate):
+    """Per-asset CAPEX / straight-line depreciation / annualized economic capital."""
+    entries = []
+    for asset, capex in capex_by_asset.items():
+        life = int(lifetime_by_asset[asset])
+        annuity = float(capex) * rail_capital_recovery_factor(real_discount_rate, life)
+        entries.append({
+            'Asset': asset,
+            'Attributed CAPEX CHF': float(capex),
+            'Life years': life,
+            'Straight-line depreciation CHF/year': float(capex) / life,
+            'Economic annuity CHF/year': annuity,
+        })
+    return entries
 
 
 # Public technology benchmarks used only as external reference guideposts.
@@ -229,7 +256,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.3.4: compact in-page navigation and readable chart areas. */
+    /* V3.3.5: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -245,7 +272,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.2</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.5</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -266,7 +293,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.3.4: compact section navigation. Internal anchors do not change model state.
+# V3.3.5: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -375,12 +402,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.3.2: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.3.5: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.3.4, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.3.5, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -1204,7 +1231,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.3.4 · Rail depot: geothermal + solar PV + battery", expanded=False):
+    with st.expander("V3.3.5 · Rail depot: PV-only / geothermal + solar PV + battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -1230,22 +1257,46 @@ with st.sidebar:
         st.markdown("##### Hydrogen and comparative economics")
         rh_pem_kwh_kg = st.number_input("PEM electrical energy (kWh/kg H₂ delivered)", 35.0, 100.0, 53.0, 1.0, key="rh_pem_sec")
         rh_grid_cost = st.number_input("Grid energy purchase price (CHF/kWh)", 0.0, 2.0, 0.22, 0.01, key="rh_grid_price")
-        rh_renew_value = st.number_input("Internal renewable electricity opportunity value (CHF/kWh)", 0.0, 2.0, 0.12, 0.01, key="rh_renew_val")
+        rh_renew_value = st.number_input("Renewable electricity transfer price (CHF/kWh; contract mode only)", 0.0, 2.0, 0.12, 0.01, key="rh_renew_val")
         rh_purchased_heat_price = st.number_input("Purchased supplementary heat (CHF/kWh_th)", 0.0, 1.0, 0.04, 0.01, key="rh_heat_price")
-        rh_geo_heat_value = st.number_input("Geothermal heat internal opportunity value (CHF/kWh_th)", 0.0, 1.0, 0.025, 0.005, key="rh_geo_heat_value")
+        rh_geo_heat_value = st.number_input("Geothermal heat transfer price (CHF/kWh_th; contract mode only)", 0.0, 1.0, 0.025, 0.005, key="rh_geo_heat_value")
         rh_extra_chf_kg = st.number_input("Additional process / compression OPEX (CHF/kg H₂)", 0.0, 30.0, 0.45, 0.05, key="rh_extra")
-        rh_days = st.slider("Operating days/year", 100, 365, 330, key="rh_days")
-        rh_crf = st.slider("Annual capital recovery factor (%)", 1, 25, 9, key="rh_crf") / 100.0
-        rh_fixed_opex_fraction = st.slider("Annual fixed OPEX (% allocated CAPEX)", 0, 20, 3, key="rh_fixed") / 100.0
+        st.markdown("##### Transparent capital amortization — editable screening assumptions")
+        rh_days = st.slider("Operating days/year (same H₂ volume in every scenario)", 100, 365, 330, key="rh_days")
+        rh_costing_mode = st.radio(
+            "How renewable electricity and geothermal heat are paid for",
+            ["Owned assets — annualized CAPEX + maintenance", "Purchased renewables — energy transfer contract"],
+            index=0, key="rh_finance_mode", help=(
+                "Choose one accounting boundary. Owned assets use attributable PV/geothermal CAPEX and OPEX "
+                "and do NOT charge a second internal renewable kWh transfer price. "
+                "A supply contract charges renewable kWh and qualified geothermal heat at transfer prices "
+                "but excludes their generation CAPEX/OPEX. The hydrogen reactor and owned buffer battery "
+                "remain investments in both cases."
+            ),
+        )
+        rh_interest_pct = st.slider("Annual real discount / financing rate (%)", 0.0, 20.0, 6.0, 0.5, key="rh_interest")
+        rh_interest = rh_interest_pct / 100.0
+        rh_life_reactor = st.slider("HPRS-W / PEM plant life (years)", 5, 40, 15, key="rh_life_reactor")
+        rh_life_pv = st.slider("PV plant life (years)", 10, 40, 25, key="rh_life_pv")
+        rh_life_battery = st.slider("Stationary battery life (years)", 5, 25, 12, key="rh_life_battery")
+        rh_life_geo = st.slider("Geothermal asset life (years)", 10, 50, 30, key="rh_life_geo")
+        rh_fixed_opex_fraction = st.slider("Reactor annual fixed maintenance (% reactor CAPEX)", 0.0, 20.0, 3.0, 0.5, key="rh_fixed") / 100.0
+        rh_pv_opex_pct = st.slider("PV annual fixed maintenance (% attributed PV CAPEX)", 0.0, 10.0, 1.5, 0.5, key="rh_fixed_pv") / 100.0
+        rh_battery_opex_pct = st.slider("Battery annual fixed maintenance (% attributed battery CAPEX)", 0.0, 10.0, 2.0, 0.5, key="rh_fixed_bat") / 100.0
         rh_hprsw_capex = st.number_input("HPRS-W depot installed CAPEX (CHF)", 0.0, 500000000.0, 2200000.0, 100000.0, key="rh_cap_plasma")
         rh_pem_capex = st.number_input("PEM depot installed CAPEX (CHF)", 0.0, 500000000.0, 1800000.0, 100000.0, key="rh_cap_pem")
         rh_pv_capex = st.number_input("PV plant installed CAPEX (CHF)", 0.0, 500000000.0, 1600000.0, 100000.0, key="rh_cap_pv")
-        rh_bat_capex = st.number_input("Stationary battery CAPEX (CHF)", 0.0, 500000000.0, 800000.0, 100000.0, key="rh_cap_bat")
-        rh_pv_capex_alloc = st.slider("PV CAPEX attributed to H₂ (%)", 0, 100, 100, key="rh_attrib_pv") / 100.0
-        rh_bat_capex_alloc = st.slider("Battery CAPEX attributed to H₂ (%)", 0, 100, 100, key="rh_attrib_bat") / 100.0
-        rh_geo_capex_allocated = st.number_input("Geothermal CAPEX allocated to H₂ (CHF)", 0.0, 1000000000.0, 0.0, 100000.0, key="rh_cap_geo")
-        rh_geo_opex_allocated = st.number_input("Geothermal annual fixed OPEX allocated to H₂ (CHF/year)", 0.0, 100000000.0, 0.0, 10000.0, key="rh_geo_opex")
-        st.caption("Allocation assumptions must be reviewed: zero geothermal CAPEX/OPEX does not represent a complete power-plant cost; renewable opportunity price and CAPEX must use consistent economic boundaries.")
+        rh_bat_capex = st.number_input("Stationary battery installed CAPEX (CHF)", 0.0, 500000000.0, 800000.0, 100000.0, key="rh_cap_bat")
+        rh_pv_capex_alloc = st.slider("PV share of CAPEX attributed to Rail H₂ (%)", 0, 100, 100, key="rh_attrib_pv") / 100.0
+        rh_bat_capex_alloc = st.slider("Stationary battery share attributed to Rail H₂ (%)", 0, 100, 100, key="rh_attrib_bat") / 100.0
+        rh_geo_capex_allocated = st.number_input("Geothermal installed CAPEX attributable to Rail H₂ (CHF)", 0.0, 1000000000.0, 0.0, 100000.0, key="rh_cap_geo")
+        rh_geo_opex_allocated = st.number_input("Geothermal annual fixed OPEX attributable to Rail H₂ (CHF/year)", 0.0, 100000000.0, 0.0, 10000.0, key="rh_geo_opex")
+        st.caption(
+            "All capital inputs are illustrative, not equipment quotations. Annual economic capital recovery uses "
+            "CAPEX × r / [1 − (1+r)^(-n)]. Straight-line depreciation (CAPEX / n) is displayed separately "
+            "but NOT added again to costs. Zero geothermal investment or maintenance makes owned hybrid "
+            "scenarios incomplete until a justified allocation is entered."
+        )
 
     st.divider()
     st.subheader("Operating-cost inputs")
@@ -2741,10 +2792,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.3.4: Always-visible charts and compact navigation; physics unchanged.
+# V3.3.5: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.3.4")
+st.subheader("Research graphics dashboard · V3.3.5")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -4375,7 +4426,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.3.4 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.3.5 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -4616,15 +4667,16 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.3.4 RENEWABLE RAIL DEPOT: GEOTHERMAL + PV + STATIONARY BATTERY
-# Self-contained integration; the original Rail vehicle and HPRS-W physics stay intact.
+# V3.3.5 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Hybrid renewable depot — Rail H₂ cost (V3.3.4)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.3.5)")
 st.caption(
-    "Daily Rail H₂ production comes directly from the route/fuel-cell model above. "
-    "Geothermal electricity uses the original V4.0 simplified energy equation; solar and battery dispatch "
-    "uses a repeating synthetic 24-hour day. The comparison includes attributable capital and annual fixed OPEX."
+    "Four independent plants with identical rail H₂ demand: PV + battery (no geothermal, grid backup allowed) "
+    "and PV + geothermal + battery, each serving either HPRS-W or PEM. Each alternative includes "
+    "a transparent annualized investment schedule and can be compared with purchased H₂. "
+    "Results are scenario estimates; not plant-specific bids, proof of plasma efficiency, or investment advice."
 )
 
 rh_thermal_kw = rh_geo_flow_kg_s * 4.18 * max(rh_geo_temp_c - rh_geo_reinj_c, 0.0)
@@ -4638,162 +4690,327 @@ rh_geo_eligible_heat_day = (
     rh_geo_recoverable_heat_day * rh_geo_heat_grade
     if rh_geo_temp_c >= rh_required_heat_temp_c else 0.0
 )
-
-rh_hprs_sec = hprsw_plasma_electricity / max(hprsw_recovery_chain, 1e-12)
 rh_daily_kg = rail_h2_daily_kg
-rh_plasma_dispatch = rail_hybrid_dispatch(
-    rh_pv_kwp, rh_sun_hours, rh_pv_pr, rh_geo_net_electric_day, rh_geo_alloc,
-    rh_battery_kwh, rh_battery_kw, rh_battery_eff, rh_daily_kg, rh_hprs_sec,
+rh_hprs_sec = hprsw_plasma_electricity / max(hprsw_recovery_chain, 1e-12)
+rh_hprsw_heat_req_day = (
+    rh_daily_kg / max(hprsw_recovery_chain, 1e-12)
+    * hprsw_steam_preheat * (1.0 - hprsw_heat_recovery)
 )
-rh_pem_dispatch = rail_hybrid_dispatch(
-    rh_pv_kwp, rh_sun_hours, rh_pv_pr, rh_geo_net_electric_day, rh_geo_alloc,
-    rh_battery_kwh, rh_battery_kw, rh_battery_eff, rh_daily_kg, rh_pem_kwh_kg,
+rh_hprs_water_m3_day = (
+    rh_daily_kg / max(hprsw_recovery_chain, 1e-12)
+    * rail_hprsw_water_per_gross_h2 / 1000.0
 )
-
-# HPRS-W process-water and argon requirements are inherited from the existing Rail equations.
-rh_hprsw_heat_req_day = rh_daily_kg / max(hprsw_recovery_chain, 1e-12) * hprsw_steam_preheat * (1.0 - hprsw_heat_recovery)
-rh_hprsw_geo_heat_used_day = min(rh_hprsw_heat_req_day, rh_geo_eligible_heat_day)
-rh_hprsw_purchased_heat_day = rh_hprsw_heat_req_day - rh_hprsw_geo_heat_used_day
-rh_hprs_water_m3_day = rh_daily_kg / max(hprsw_recovery_chain, 1e-12) * rail_hprsw_water_per_gross_h2 / 1000.0
-rh_hprs_argon_kg_day = rh_daily_kg / max(hprsw_recovery_chain, 1e-12) * hprsw_argon_circulation * (1.0 - hprsw_argon_recovery)
-rh_hprs_o2_kg_day = rh_daily_kg / max(hprsw_recovery_chain, 1e-12) * O2_KG_PER_KG_H2_STOICH * hprsw_o2_recovery
-
-# Screening PEM assumes liquid-water stoichiometric feed; purification and compression
-# are included only to the extent represented by the user's SEC and extra OPEX inputs.
+rh_hprs_argon_kg_day = (
+    rh_daily_kg / max(hprsw_recovery_chain, 1e-12)
+    * hprsw_argon_circulation * (1.0 - hprsw_argon_recovery)
+)
+rh_hprs_o2_kg_day = (
+    rh_daily_kg / max(hprsw_recovery_chain, 1e-12)
+    * O2_KG_PER_KG_H2_STOICH * hprsw_o2_recovery
+)
 rh_pem_water_m3_day = rh_daily_kg * WATER_KG_PER_KG_H2_STOICH / 1000.0
+rh_owned_assets = rh_costing_mode.startswith("Owned assets")
+rh_lifetimes = {
+    'Reactor H₂': rh_life_reactor,
+    'PV allocated': rh_life_pv,
+    'Battery allocated': rh_life_battery,
+    'Geothermal allocated': rh_life_geo,
+}
+rh_annual_h2 = max(rh_daily_kg * rh_days, 1e-12)
 
-def rh_depot_costs(dispatch, technology):
-    if technology == 'HPRS-W':
-        reactor_capex = rh_hprsw_capex
-        water_cost = rh_hprs_water_m3_day * water_price_chf_m3
-        argon_cost = rh_hprs_argon_kg_day * argon_price_chf_kg
-        o2_credit = rh_hprs_o2_kg_day * oxygen_value_chf_kg
-        heat_geo_cost = rh_hprsw_geo_heat_used_day * rh_geo_heat_value
-        heat_external_cost = rh_hprsw_purchased_heat_day * rh_purchased_heat_price
-    else:
-        reactor_capex = rh_pem_capex
-        water_cost = rh_pem_water_m3_day * water_price_chf_m3
-        argon_cost = o2_credit = heat_geo_cost = heat_external_cost = 0.0
-    renewable_chf_day = dispatch['renewable_used_kwh_day'] * rh_renew_value
-    grid_chf_day = dispatch['grid_kwh_day'] * rh_grid_cost
-    other_chf_day = rh_daily_kg * rh_extra_chf_kg
-    daily_cost = max(0.0, (
-        grid_chf_day + renewable_chf_day + water_cost + argon_cost
-        + heat_geo_cost + heat_external_cost + other_chf_day - o2_credit
-    ))
-    total_attributed_capex = (
-        reactor_capex + rh_pv_capex * rh_pv_capex_alloc
-        + rh_bat_capex * rh_bat_capex_alloc + rh_geo_capex_allocated
+
+def rail_depot_scenario(technology, with_geothermal):
+    """Independent alternative with explicit costing boundary and CAPEX schedule."""
+    specific_energy = rh_hprs_sec if technology == 'HPRS-W' else rh_pem_kwh_kg
+    geo_day = rh_geo_net_electric_day if with_geothermal else 0.0
+    geo_fraction = rh_geo_alloc if with_geothermal else 0.0
+    dispatch = rail_hybrid_dispatch(
+        rh_pv_kwp, rh_sun_hours, rh_pv_pr, geo_day, geo_fraction,
+        rh_battery_kwh, rh_battery_kw, rh_battery_eff,
+        rh_daily_kg, specific_energy,
     )
-    annual_capital = total_attributed_capex * rh_crf
-    annual_fixed = total_attributed_capex * rh_fixed_opex_fraction + rh_geo_opex_allocated
-    annual_h2 = rh_daily_kg * rh_days
-    full_cost = (daily_cost * rh_days + annual_capital + annual_fixed) / max(annual_h2, 1e-9)
-    return {
-        'full_cost_chf_kg': full_cost,
-        'cost_chf_train_km': full_cost * rail_h2_kg_per_km,
-        'variable_cost_chf_kg': daily_cost / max(rh_daily_kg, 1e-9),
-        'renewable_chf_day': renewable_chf_day,
-        'grid_chf_day': grid_chf_day,
-        'annual_capital_chf': annual_capital,
-        'annual_fixed_chf': annual_fixed,
-        'daily_cost_chf': daily_cost,
+    reactor_capex = rh_hprsw_capex if technology == 'HPRS-W' else rh_pem_capex
+    asset_caps = {
+        'Reactor H₂': reactor_capex,
+        'PV allocated': rh_pv_capex * rh_pv_capex_alloc if rh_owned_assets else 0.0,
+        'Battery allocated': rh_bat_capex * rh_bat_capex_alloc,
+        'Geothermal allocated': (
+            rh_geo_capex_allocated if with_geothermal and rh_owned_assets else 0.0
+        ),
     }
-
-rh_plasma_cost = rh_depot_costs(rh_plasma_dispatch, 'HPRS-W')
-rh_pem_cost = rh_depot_costs(rh_pem_dispatch, 'PEM')
-
-if rh_geo_temp_c < rh_required_heat_temp_c and rh_geo_heat_grade > 0:
-    st.warning(
-        "Selected geothermal source temperature is below the requested process-preheat temperature. "
-        "No geothermal process heat is credited; temperature upgrading would need separate energy and cost modeling."
+    schedule = rail_asset_cost_schedule(asset_caps, rh_lifetimes, rh_interest)
+    annual_capital = sum(asset['Economic annuity CHF/year'] for asset in schedule)
+    annual_depreciation = sum(asset['Straight-line depreciation CHF/year'] for asset in schedule)
+    fixed_opex = {
+        'Reactor maintenance': reactor_capex * rh_fixed_opex_fraction,
+        'PV maintenance': asset_caps['PV allocated'] * rh_pv_opex_pct,
+        'Battery maintenance': asset_caps['Battery allocated'] * rh_battery_opex_pct,
+        'Geothermal allocated OPEX': (
+            rh_geo_opex_allocated if with_geothermal and rh_owned_assets else 0.0
+        ),
+    }
+    annual_fixed = sum(fixed_opex.values())
+    geo_heat_used = (
+        min(rh_hprsw_heat_req_day, rh_geo_eligible_heat_day)
+        if technology == 'HPRS-W' and with_geothermal else 0.0
     )
-if rh_geo_capex_allocated <= 0.0 or rh_geo_opex_allocated <= 0.0:
-    st.warning(
-        "Geothermal capital and/or fixed operating costs attributed to H₂ are zero. "
-        "The results below are an incomplete integrated-project cost until actual geothermal costs or "
-        "a defensible electricity purchasing/transfer contract are entered."
+    purchased_heat_day = (
+        rh_hprsw_heat_req_day - geo_heat_used if technology == 'HPRS-W' else 0.0
     )
-if rh_daily_kg < 1e-6:
-    st.info("No meaningful Rail hydrogen demand at the selected mission: cost comparisons are not useful.")
+    operating_lines = {
+        'Purchased grid electricity': dispatch['grid_kwh_day'] * rh_grid_cost,
+        'Renewables under transfer contract': (
+            dispatch['renewable_used_kwh_day'] * rh_renew_value
+            if not rh_owned_assets else 0.0
+        ),
+        'Process water': (
+            rh_hprs_water_m3_day if technology == 'HPRS-W' else rh_pem_water_m3_day
+        ) * water_price_chf_m3,
+        'Argon make-up': (
+            rh_hprs_argon_kg_day * argon_price_chf_kg if technology == 'HPRS-W' else 0.0
+        ),
+        'Externally supplied process heat': purchased_heat_day * rh_purchased_heat_price,
+        'Geothermal heat under transfer contract': (
+            geo_heat_used * rh_geo_heat_value if not rh_owned_assets else 0.0
+        ),
+        'Variable process/compression OPEX': rh_daily_kg * rh_extra_chf_kg,
+        'Recovered O₂ credit': (
+            -rh_hprs_o2_kg_day * oxygen_value_chf_kg if technology == 'HPRS-W' else 0.0
+        ),
+    }
+    variable_per_day = sum(operating_lines.values())
+    variable_per_year = variable_per_day * rh_days
+    full_annual = variable_per_year + annual_capital + annual_fixed
+    eligible_for_ranking = True
+    missing_cost_reason = ''
+    if rh_owned_assets:
+        if rh_pv_kwp > 0 and rh_pv_capex_alloc > 0 and rh_pv_capex <= 0:
+            eligible_for_ranking = False
+            missing_cost_reason = 'PV CAPEX missing'
+        if with_geothermal and rh_geo_alloc > 0 and (
+            rh_geo_capex_allocated <= 0 or rh_geo_opex_allocated <= 0
+        ):
+            eligible_for_ranking = False
+            missing_cost_reason = 'Geothermal CAPEX/OPEX allocation missing'
+    elif rh_renew_value <= 0 and dispatch['renewable_used_kwh_day'] > 0:
+        eligible_for_ranking = False
+        missing_cost_reason = 'Renewable transfer price missing'
+    total_demand_kwh_day = rh_daily_kg * specific_energy
+    result = {
+        'Label': f"{'PV-only' if not with_geothermal else 'PV + geothermal'} / {technology}",
+        'Technology': technology, 'With geothermal': with_geothermal,
+        'Dispatch': dispatch, 'CAPEX schedule': schedule,
+        'Fixed OPEX details': fixed_opex, 'Variable OPEX details': operating_lines,
+        'Daily H₂ kg': rh_daily_kg, 'Annual H₂ kg': rh_annual_h2,
+        'Annual capital recovery CHF': annual_capital,
+        'Annual straight-line depreciation CHF': annual_depreciation,
+        'Annual fixed OPEX CHF': annual_fixed,
+        'Annual variable OPEX CHF': variable_per_year,
+        'Full annual cost CHF': full_annual,
+        'Cost CHF/kg H₂': full_annual / rh_annual_h2,
+        'Variable CHF/kg': variable_per_year / rh_annual_h2,
+        'Capital CHF/kg': annual_capital / rh_annual_h2,
+        'Fixed OPEX CHF/kg': annual_fixed / rh_annual_h2,
+        'Cost CHF/train-km': full_annual / rh_annual_h2 * rail_h2_kg_per_km,
+        'Grid share percent': (
+            100.0 * dispatch['grid_kwh_day'] / max(total_demand_kwh_day, 1e-9)
+        ),
+        'Process heat geothermal kWh/day': geo_heat_used,
+        'Purchased process heat kWh/day': purchased_heat_day,
+        'Complete': eligible_for_ranking,
+        'Cost limitation': missing_cost_reason,
+    }
+    return result
 
-hc1, hc2, hc3, hc4 = st.columns(4)
-hc1.metric("Rail H₂ demand", f"{rh_daily_kg:,.1f} kg/day")
-hc2.metric("Hybrid HPRS-W (full-cost screen)", f"CHF {rh_plasma_cost['full_cost_chf_kg']:,.2f}/kg")
-hc3.metric("Hybrid PEM (full-cost screen)", f"CHF {rh_pem_cost['full_cost_chf_kg']:,.2f}/kg")
-hc4.metric("Purchased delivered H₂ (reference)", f"CHF {rail_delivered_h2_price_chf_kg:,.2f}/kg")
 
-rh_compare = pd.DataFrame([
-    {'Pathway': 'Hybrid HPRS-W depot', 'Cost CHF/kg H₂': rh_plasma_cost['full_cost_chf_kg'],
-     'Cost CHF/train-km': rh_plasma_cost['cost_chf_train_km'],
-     'Electricity kWh/kg H₂': rh_hprs_sec, 'Grid kWh/day': rh_plasma_dispatch['grid_kwh_day']},
-    {'Pathway': 'Hybrid PEM depot', 'Cost CHF/kg H₂': rh_pem_cost['full_cost_chf_kg'],
-     'Cost CHF/train-km': rh_pem_cost['cost_chf_train_km'],
-     'Electricity kWh/kg H₂': rh_pem_kwh_kg, 'Grid kWh/day': rh_pem_dispatch['grid_kwh_day']},
-    {'Pathway': 'Purchased H₂ delivered', 'Cost CHF/kg H₂': rail_delivered_h2_price_chf_kg,
-     'Cost CHF/train-km': rail_h2_cost_per_km,
-     'Electricity kWh/kg H₂': float('nan'), 'Grid kWh/day': float('nan')},
-])
+rh_scenarios = [
+    rail_depot_scenario('HPRS-W', False),
+    rail_depot_scenario('PEM', False),
+    rail_depot_scenario('HPRS-W', True),
+    rail_depot_scenario('PEM', True),
+]
+if rh_daily_kg <= 0:
+    st.warning('No positive rail H₂ demand; cost comparison cannot be interpreted.')
+
+if rh_owned_assets and rh_geo_alloc > 0 and (
+    rh_geo_capex_allocated <= 0 or rh_geo_opex_allocated <= 0
+):
+    st.warning(
+        'Geothermal + PV is an INCOMPLETE economic scenario: enter the attributable '
+        'geothermal investment and annual fixed OPEX in the left sidebar. Its CHF/kg '
+        'will be displayed, but it will not be ranked as a fully costed alternative. '
+        'The PV-only alternatives require no geothermal investment.'
+    )
+
+st.markdown('##### Hydrogen cost comparison — five independent alternatives')
+rh_comparison_rows = [
+    {
+        'Pathway': s['Label'],
+        'Cost CHF/kg H₂': s['Cost CHF/kg H₂'],
+        'Cost CHF/train-km': s['Cost CHF/train-km'],
+        'Capital CHF/kg': s['Capital CHF/kg'],
+        'Fixed OPEX CHF/kg': s['Fixed OPEX CHF/kg'],
+        'Variable CHF/kg': s['Variable CHF/kg'],
+        'Grid share %': s['Grid share percent'],
+        'Status': 'Costed' if s['Complete'] else 'Incomplete allocation',
+    }
+    for s in rh_scenarios
+]
+rh_comparison_rows.append({
+    'Pathway': 'Purchased delivered H₂',
+    'Cost CHF/kg H₂': rail_delivered_h2_price_chf_kg,
+    'Cost CHF/train-km': rail_h2_cost_per_km,
+    'Capital CHF/kg': 0.0, 'Fixed OPEX CHF/kg': 0.0,
+    'Variable CHF/kg': rail_delivered_h2_price_chf_kg,
+    'Grid share %': float('nan'), 'Status': 'Reference purchase price',
+})
+rh_compare = pd.DataFrame(rh_comparison_rows)
 st.dataframe(
     rh_compare.style.format({
-        'Cost CHF/kg H₂': '{:.2f}', 'Cost CHF/train-km': '{:.2f}',
-        'Electricity kWh/kg H₂': '{:.1f}', 'Grid kWh/day': '{:,.0f}',
+        'Cost CHF/kg H₂': '{:,.2f}', 'Cost CHF/train-km': '{:,.2f}',
+        'Capital CHF/kg': '{:,.2f}', 'Fixed OPEX CHF/kg': '{:,.2f}',
+        'Variable CHF/kg': '{:,.2f}', 'Grid share %': '{:.1f}',
     }, na_rep='—'), width='stretch', hide_index=True,
 )
+st.caption(
+    'PV-only means no geothermal plant; grid backup is permitted and included as purchased electricity. '
+    'Grid share is shown above. All four H₂ plants serve the same rail demand and use the same PV/battery sizing. '
+    'They are alternatives, not four simultaneous installations. Purchased H₂ is a user-entered benchmark.'
+)
+
+rh_costed = [s for s in rh_scenarios if s['Complete']]
+if rh_costed and rh_daily_kg > 0:
+    rh_winner = min(rh_costed, key=lambda s: s['Cost CHF/kg H₂'])
+    rh_best_cost = min(rh_winner['Cost CHF/kg H₂'], rail_delivered_h2_price_chf_kg)
+    cheapest = (
+        rh_winner['Label'] if rh_winner['Cost CHF/kg H₂'] <= rail_delivered_h2_price_chf_kg
+        else 'Purchased delivered H₂'
+    )
+    st.info(
+        f'Lowest displayed complete-cost alternative under THESE assumptions: **{cheapest}**, '
+        f'about **CHF {rh_best_cost:,.2f}/kg H₂**. '
+        'This is not a site-validated or bankable estimate.'
+    )
+else:
+    st.info('No fully costed own-production alternative; complete the cost inputs.')
+
 hrc1, hrc2 = st.columns(2)
 with hrc1:
-    st.markdown("##### Rail depot: cost per kg H₂")
-    st.bar_chart(rh_compare.set_index('Pathway')[['Cost CHF/kg H₂']], height=310)
+    st.markdown('##### Cost per kg H₂ — includes annualized CAPEX')
+    st.bar_chart(rh_compare.set_index('Pathway')[['Cost CHF/kg H₂']], height=330)
 with hrc2:
-    st.markdown("##### Rail depot: cost per train-km")
-    st.bar_chart(rh_compare.set_index('Pathway')[['Cost CHF/train-km']], height=310)
-
-with st.expander("Renewable dispatch, geothermal heat and cost breakdown", expanded=False):
-    rh_tech = st.radio('View rail-depot energy dispatch', ['HPRS-W', 'PEM'], horizontal=True, key='rh_disp_tech')
-    rh_view = rh_plasma_dispatch if rh_tech == 'HPRS-W' else rh_pem_dispatch
-    rh_view_cost = rh_plasma_cost if rh_tech == 'HPRS-W' else rh_pem_cost
-    rh_dispatch_df = pd.DataFrame(rh_view['rows']).set_index('Hour')
-    st.line_chart(rh_dispatch_df[['PV kWh', 'Geothermal kWh', 'Process demand kWh', 'Grid imports kWh']], height=325)
-    st.bar_chart(rh_dispatch_df[['Battery charged kWh', 'Battery discharged kWh']], height=250)
-    re1, re2, re3, re4 = st.columns(4)
-    re1.metric('PV modeled generation', f"{rh_view['pv_kwh_day']:,.0f} kWh/day")
-    re2.metric('Allocated geothermal electricity', f"{rh_view['geo_allocated_kwh_day']:,.0f} kWh/day")
-    re3.metric('Grid purchased', f"{rh_view['grid_kwh_day']:,.0f} kWh/day")
-    re4.metric('Unallocated renewable surplus', f"{rh_view['surplus_kwh_day']:,.0f} kWh/day")
-    st.caption(
-        f"Steady-day battery SOC {rh_view['battery_start_kwh']:,.1f} → {rh_view['battery_end_kwh']:,.1f} kWh. "
-        "Dispatch uses a repeated identical synthetic solar day, not real seasonal weather or battery degradation. "
-        "Surplus is not assigned export revenue."
+    st.markdown('##### Cost composition — CHF/kg H₂')
+    st.bar_chart(
+        rh_compare.set_index('Pathway')[
+            ['Capital CHF/kg', 'Fixed OPEX CHF/kg', 'Variable CHF/kg']
+        ], stack=True, height=330,
     )
-    st.write(f"Geothermal V4.0 net electricity (whole plant): **{rh_geo_net_electric_day:,.0f} kWh/day**")
-    st.write(f"Geothermal V4.0 recoverable heat proxy: **{rh_geo_recoverable_heat_day:,.0f} kWh_th/day**")
-    st.write(f"Temperature-qualified geothermal heat share: **{rh_geo_eligible_heat_day:,.0f} kWh_th/day**")
-    st.write(f"HPRS-W thermal demand: **{rh_hprsw_heat_req_day:,.0f} kWh_th/day**; geothermal utilized: "
-             f"**{rh_hprsw_geo_heat_used_day:,.0f}**; purchased supplementary heat: "
-             f"**{rh_hprsw_purchased_heat_day:,.0f} kWh_th/day**")
-    rh_breakdown = pd.DataFrame([
-        {'Cost category': 'Grid electricity (CHF/day)', 'Value CHF': rh_view_cost['grid_chf_day']},
-        {'Cost category': 'Renewable energy opportunity/transfer (CHF/day)', 'Value CHF': rh_view_cost['renewable_chf_day']},
-        {'Cost category': 'All operating variable costs (CHF/day)', 'Value CHF': rh_view_cost['daily_cost_chf']},
-        {'Cost category': 'Annual capital recovery (CHF/year)', 'Value CHF': rh_view_cost['annual_capital_chf']},
-        {'Cost category': 'Annual fixed OPEX (CHF/year)', 'Value CHF': rh_view_cost['annual_fixed_chf']},
-    ])
-    st.dataframe(rh_breakdown.style.format({'Value CHF':'{:,.2f}'}), width='stretch', hide_index=True)
-    st.download_button('Download Rail depot cost comparison CSV', rh_compare.to_csv(index=False),
-                       file_name='hydrogenorg_rail_hybrid_costs_v334.csv', mime='text/csv')
-    st.download_button('Download selected 24h dispatch CSV', rh_dispatch_df.reset_index().to_csv(index=False),
-                       file_name='hydrogenorg_rail_depot_dispatch_v334.csv', mime='text/csv')
 
-st.info(
-    "Scientific boundary: the PV profile is a synthetic daily curve and geothermal performance is the original "
-    "lumped V4.0 model, not site-confirmed generation. Usable process heat is gated by an editable source "
-    "temperature and still requires heat-exchanger/process validation. PEM and HPRS-W SEC are assumptions; "
-    "the model does not validate a plasma energy advantage. Costs include user-assigned capital, fixed OPEX "
-    "and energy opportunity value, but omit detailed permitting, taxes, outages, H₂ infrastructure and degradation. "
-    "Do not add solar/geothermal asset LCOE a second time if already represented in the chosen transfer price/CAPEX."
+st.markdown('##### Transparent amortization — inspect one alternative')
+rh_selected_name = st.selectbox(
+    'Choose the alternative for detailed capital/depreciation calculations',
+    [scenario['Label'] for scenario in rh_scenarios],
+    key='rh_detail_pick',
 )
-st.link_button("Open the separate HydrogenOrg Hybrid Energy simulator",
-               "https://hydrogenorg-hybrid-frxmeevahxd7vcng3uk3em.streamlit.app/")
+rh_selected = next(s for s in rh_scenarios if s['Label'] == rh_selected_name)
+rh_am1, rh_am2, rh_am3, rh_am4 = st.columns(4)
+rh_am1.metric('Attributed initial CAPEX', f"CHF {sum(x['Attributed CAPEX CHF'] for x in rh_selected['CAPEX schedule']):,.0f}")
+rh_am2.metric('Economic annualized CAPEX', f"CHF {rh_selected['Annual capital recovery CHF']:,.0f}/yr")
+rh_am3.metric('Straight-line depreciation (info only)', f"CHF {rh_selected['Annual straight-line depreciation CHF']:,.0f}/yr")
+rh_am4.metric('Annual production', f"{rh_selected['Annual H₂ kg']:,.0f} kg/yr")
+
+with st.expander('Amortization formula, per-asset schedule, operating cost and power dispatch', expanded=True):
+    st.latex(r'\mathrm{Annualized\ CAPEX}=\sum_i C_i\frac{r(1+r)^{n_i}}{(1+r)^{n_i}-1}')
+    st.caption(
+        f'Annual real financing rate r = {rh_interest_pct:.1f}%. Each asset has its own lifetime. '
+        'Economic annualized CAPEX is included in CHF/kg. Accounting depreciation is displayed '
+        'for transparency ONLY, not added again to the price. Annual operating days: '
+        f'{rh_days}; annual output: {rh_selected["Annual H₂ kg"]:,.0f} kg.'
+    )
+    rh_schedule_df = pd.DataFrame(rh_selected['CAPEX schedule'])
+    st.dataframe(rh_schedule_df.style.format({
+        'Attributed CAPEX CHF': '{:,.0f}',
+        'Straight-line depreciation CHF/year': '{:,.0f}',
+        'Economic annuity CHF/year': '{:,.0f}',
+    }), width='stretch', hide_index=True)
+    rh_line_items = []
+    rh_line_items.extend({
+        'Annual cost item': name, 'CHF/year': amount * rh_days,
+        'CHF/kg H₂': amount / max(rh_daily_kg, 1e-9),
+    } for name, amount in rh_selected['Variable OPEX details'].items())
+    rh_line_items.extend({
+        'Annual cost item': name, 'CHF/year': amount,
+        'CHF/kg H₂': amount / rh_annual_h2,
+    } for name, amount in rh_selected['Fixed OPEX details'].items())
+    rh_line_items.extend({
+        'Annual cost item': f"Annualized capital: {a['Asset']}",
+        'CHF/year': a['Economic annuity CHF/year'],
+        'CHF/kg H₂': a['Economic annuity CHF/year'] / rh_annual_h2,
+    } for a in rh_selected['CAPEX schedule'])
+    rh_line_items.append({
+        'Annual cost item': 'TOTAL (do not add depreciation again)',
+        'CHF/year': rh_selected['Full annual cost CHF'],
+        'CHF/kg H₂': rh_selected['Cost CHF/kg H₂'],
+    })
+    rh_line_df = pd.DataFrame(rh_line_items)
+    st.dataframe(rh_line_df.style.format({
+        'CHF/year': '{:,.2f}', 'CHF/kg H₂': '{:,.3f}',
+    }), width='stretch', hide_index=True)
+    rd = rh_selected['Dispatch']
+    rdisp = pd.DataFrame(rd['rows']).set_index('Hour')
+    st.line_chart(
+        rdisp[['PV kWh', 'Geothermal kWh', 'Process demand kWh', 'Grid imports kWh']],
+        height=310,
+    )
+    st.bar_chart(rdisp[['Battery charged kWh', 'Battery discharged kWh']], height=230)
+    rh_dm1, rh_dm2, rh_dm3, rh_dm4 = st.columns(4)
+    rh_dm1.metric('PV modeled electricity', f"{rd['pv_kwh_day']:,.0f} kWh/day")
+    rh_dm2.metric('Geothermal electricity allocated', f"{rd['geo_allocated_kwh_day']:,.0f} kWh/day")
+    rh_dm3.metric('Grid purchase', f"{rd['grid_kwh_day']:,.0f} kWh/day")
+    rh_dm4.metric('Renewable surplus', f"{rd['surplus_kwh_day']:,.0f} kWh/day")
+    st.caption(
+        f"Steady-day battery SOC: {rd['battery_start_kwh']:,.0f} → "
+        f"{rd['battery_end_kwh']:,.0f} kWh. Generated but unused PV/geo energy has "
+        'no fictitious sale revenue. Grid prices are user assumptions.'
+    )
+    st.write(
+        f"HPRS-W preheat needed **{rh_hprsw_heat_req_day:,.0f} kWh_th/day**; "
+        f"geothermal heat credited in this alternative **{rh_selected['Process heat geothermal kWh/day']:,.0f} kWh_th/day**; "
+        f"purchased heat **{rh_selected['Purchased process heat kWh/day']:,.0f} kWh_th/day**. "
+        'No geothermal heat is assumed in the PV-only scenario.'
+    )
+    st.download_button(
+        'Download full amortization and OPEX breakdown (CSV)',
+        rh_line_df.to_csv(index=False).encode('utf-8'),
+        file_name='hydrogenorg_rail_amortization_v335.csv', mime='text/csv',
+    )
+    st.download_button(
+        'Download selected 24 h dispatch (CSV)',
+        rdisp.reset_index().to_csv(index=False).encode('utf-8'),
+        file_name='hydrogenorg_rail_dispatch_v335.csv', mime='text/csv',
+    )
+
+st.download_button(
+    'Download all five hydrogen cost alternatives (CSV)',
+    rh_compare.to_csv(index=False).encode('utf-8'),
+    file_name='hydrogenorg_rail_all_pathways_v335.csv', mime='text/csv',
+)
+st.info(
+    'Methodological boundaries: Geothermal V4.0 uses a simplified lumped heat-to-power model. '
+    'PV production is a repeated representative day, not a Swiss hourly weather year; neither winter production '
+    'nor seasonal PV/storage economics are captured. Grid back-up is permitted. '
+    'HPRS-W plasma consumption/recovery are unvalidated experimental inputs. '
+    'In owned-asset mode, PV and geothermal electricity already carry their amortization and maintenance, '
+    'so the renewable internal transfer price is NOT added. Under a renewable-energy supply contract, '
+    'PV/geo CAPEX and geo OPEX are excluded, replaced by an editable electricity/heat transfer price. '
+    'Battery and H₂ plant are owned in both cases. Cost analysis excludes project taxes, replacement overhauls, '
+    'land/permits, financing fees, hydrogen storage/distribution infrastructure and detailed plant degradation. '
+    'Zero allocated geothermal capital/maintenance makes the owned hybrid comparison incomplete.'
+)
+st.link_button(
+    'Open separate HydrogenOrg Hybrid Energy simulator',
+    'https://hydrogenorg-hybrid-frxmeevahxd7vcng3uk3em.streamlit.app/',
+)
 
 st.markdown(
     f"""
@@ -5283,4 +5500,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.3.4 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.3.5 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
