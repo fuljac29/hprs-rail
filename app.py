@@ -103,7 +103,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.3.5 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.3.6 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -213,7 +213,7 @@ st.markdown(
     h1,h2,h3{color:var(--ink);}
     .horg-kicker{display:inline-block;color:var(--green);font-size:.76rem;font-weight:900;letter-spacing:.13rem;text-transform:uppercase;margin-bottom:.45rem;}
     .horg-hero{padding:1.3rem 1.45rem;border:1px solid var(--line);border-radius:20px;background:linear-gradient(135deg,#fff 0%,#eef9ff 58%,#f4fbef 100%);margin-bottom:1rem;}
-    .horg-hero h1{margin:.15rem 0 .6rem;font-size:2.35rem;line-height:1.04;font-weight:900;}
+    .horg-hero h1{color:#0b1724!important;margin:.15rem 0 .6rem;font-size:2.35rem;line-height:1.04;font-weight:900;}
     .horg-hero p{color:var(--muted);font-size:1.03rem;line-height:1.65;margin:0;}
     .horg-chip{display:inline-block;margin:.45rem .35rem 0 0;padding:.32rem .58rem;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:.76rem;font-weight:800;color:var(--ink);}
     .horg-callout{padding:1rem 1.1rem;border-radius:16px;border:1px solid rgba(243,107,25,.25);background:#fff7ed;color:#5c6f7f;line-height:1.6;}
@@ -256,7 +256,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.3.5: compact in-page navigation and readable chart areas. */
+    /* V3.3.6: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -272,7 +272,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.5</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.6</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -293,7 +293,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.3.5: compact section navigation. Internal anchors do not change model state.
+# V3.3.6: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -402,12 +402,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.3.5: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.3.6: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.3.5, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.3.6, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -1231,7 +1231,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.3.5 · Rail depot: PV-only / geothermal + solar PV + battery", expanded=False):
+    with st.expander("V3.3.6 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -2792,10 +2792,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.3.5: Always-visible charts and compact navigation; physics unchanged.
+# V3.3.6: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.3.5")
+st.subheader("Research graphics dashboard · V3.3.6")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -4426,7 +4426,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.3.5 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.3.6 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -4667,16 +4667,16 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.3.5 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.3.6 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.3.5)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.3.6)")
 st.caption(
-    "Four independent plants with identical rail H₂ demand: PV + battery (no geothermal, grid backup allowed) "
-    "and PV + geothermal + battery, each serving either HPRS-W or PEM. Each alternative includes "
-    "a transparent annualized investment schedule and can be compared with purchased H₂. "
-    "Results are scenario estimates; not plant-specific bids, proof of plasma efficiency, or investment advice."
+    "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
+    "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
+    "Every plant includes its own annualized CAPEX and OPEX. Grid backup is permitted in all cases. "
+    "This is a screening model, not a site-specific energy or investment forecast."
 )
 
 rh_thermal_kw = rh_geo_flow_kg_s * 4.18 * max(rh_geo_temp_c - rh_geo_reinj_c, 0.0)
@@ -4719,21 +4719,26 @@ rh_lifetimes = {
 rh_annual_h2 = max(rh_daily_kg * rh_days, 1e-12)
 
 
-def rail_depot_scenario(technology, with_geothermal):
+def rail_depot_scenario(technology, with_geothermal, use_battery=True,
+                        scenario_operating_days=None, scenario_sun_hours=None):
     """Independent alternative with explicit costing boundary and CAPEX schedule."""
     specific_energy = rh_hprs_sec if technology == 'HPRS-W' else rh_pem_kwh_kg
+    actual_days = rh_days if scenario_operating_days is None else int(scenario_operating_days)
+    actual_sun_hours = rh_sun_hours if scenario_sun_hours is None else float(scenario_sun_hours)
+    actual_battery_capacity = rh_battery_kwh if use_battery else 0.0
+    actual_battery_power = rh_battery_kw if use_battery else 0.0
     geo_day = rh_geo_net_electric_day if with_geothermal else 0.0
     geo_fraction = rh_geo_alloc if with_geothermal else 0.0
     dispatch = rail_hybrid_dispatch(
-        rh_pv_kwp, rh_sun_hours, rh_pv_pr, geo_day, geo_fraction,
-        rh_battery_kwh, rh_battery_kw, rh_battery_eff,
+        rh_pv_kwp, actual_sun_hours, rh_pv_pr, geo_day, geo_fraction,
+        actual_battery_capacity, actual_battery_power, rh_battery_eff,
         rh_daily_kg, specific_energy,
     )
     reactor_capex = rh_hprsw_capex if technology == 'HPRS-W' else rh_pem_capex
     asset_caps = {
         'Reactor H₂': reactor_capex,
         'PV allocated': rh_pv_capex * rh_pv_capex_alloc if rh_owned_assets else 0.0,
-        'Battery allocated': rh_bat_capex * rh_bat_capex_alloc,
+        'Battery allocated': rh_bat_capex * rh_bat_capex_alloc if use_battery else 0.0,
         'Geothermal allocated': (
             rh_geo_capex_allocated if with_geothermal and rh_owned_assets else 0.0
         ),
@@ -4779,14 +4784,20 @@ def rail_depot_scenario(technology, with_geothermal):
         ),
     }
     variable_per_day = sum(operating_lines.values())
-    variable_per_year = variable_per_day * rh_days
+    variable_per_year = variable_per_day * actual_days
+    annual_h2_in_scenario = max(rh_daily_kg * actual_days, 1e-12)
     full_annual = variable_per_year + annual_capital + annual_fixed
     eligible_for_ranking = True
     missing_cost_reason = ''
     if rh_owned_assets:
-        if rh_pv_kwp > 0 and rh_pv_capex_alloc > 0 and rh_pv_capex <= 0:
+        if rh_pv_kwp > 0 and (rh_pv_capex_alloc <= 0 or rh_pv_capex <= 0):
             eligible_for_ranking = False
-            missing_cost_reason = 'PV CAPEX missing'
+            missing_cost_reason = 'PV CAPEX / cost allocation missing'
+        if use_battery and actual_battery_capacity > 0 and (
+            rh_bat_capex <= 0 or rh_bat_capex_alloc <= 0
+        ):
+            eligible_for_ranking = False
+            missing_cost_reason = 'Battery CAPEX / allocation missing'
         if with_geothermal and rh_geo_alloc > 0 and (
             rh_geo_capex_allocated <= 0 or rh_geo_opex_allocated <= 0
         ):
@@ -4795,23 +4806,30 @@ def rail_depot_scenario(technology, with_geothermal):
     elif rh_renew_value <= 0 and dispatch['renewable_used_kwh_day'] > 0:
         eligible_for_ranking = False
         missing_cost_reason = 'Renewable transfer price missing'
+    if reactor_capex <= 0:
+        eligible_for_ranking = False
+        missing_cost_reason = 'Hydrogen plant CAPEX missing'
     total_demand_kwh_day = rh_daily_kg * specific_energy
+    system_label = ('PV + geothermal + battery' if with_geothermal and use_battery
+                    else 'PV + battery' if use_battery else 'PV without battery')
     result = {
-        'Label': f"{'PV-only' if not with_geothermal else 'PV + geothermal'} / {technology}",
+        'Label': f"{system_label} / {technology}",
         'Technology': technology, 'With geothermal': with_geothermal,
+        'Uses battery': bool(use_battery), 'Operating days/year': actual_days,
+        'Full-sun hours/day': actual_sun_hours,
         'Dispatch': dispatch, 'CAPEX schedule': schedule,
         'Fixed OPEX details': fixed_opex, 'Variable OPEX details': operating_lines,
-        'Daily H₂ kg': rh_daily_kg, 'Annual H₂ kg': rh_annual_h2,
+        'Daily H₂ kg': rh_daily_kg, 'Annual H₂ kg': annual_h2_in_scenario,
         'Annual capital recovery CHF': annual_capital,
         'Annual straight-line depreciation CHF': annual_depreciation,
         'Annual fixed OPEX CHF': annual_fixed,
         'Annual variable OPEX CHF': variable_per_year,
         'Full annual cost CHF': full_annual,
-        'Cost CHF/kg H₂': full_annual / rh_annual_h2,
-        'Variable CHF/kg': variable_per_year / rh_annual_h2,
-        'Capital CHF/kg': annual_capital / rh_annual_h2,
-        'Fixed OPEX CHF/kg': annual_fixed / rh_annual_h2,
-        'Cost CHF/train-km': full_annual / rh_annual_h2 * rail_h2_kg_per_km,
+        'Cost CHF/kg H₂': full_annual / annual_h2_in_scenario,
+        'Variable CHF/kg': variable_per_year / annual_h2_in_scenario,
+        'Capital CHF/kg': annual_capital / annual_h2_in_scenario,
+        'Fixed OPEX CHF/kg': annual_fixed / annual_h2_in_scenario,
+        'Cost CHF/train-km': full_annual / annual_h2_in_scenario * rail_h2_kg_per_km,
         'Grid share percent': (
             100.0 * dispatch['grid_kwh_day'] / max(total_demand_kwh_day, 1e-9)
         ),
@@ -4824,10 +4842,12 @@ def rail_depot_scenario(technology, with_geothermal):
 
 
 rh_scenarios = [
-    rail_depot_scenario('HPRS-W', False),
-    rail_depot_scenario('PEM', False),
-    rail_depot_scenario('HPRS-W', True),
-    rail_depot_scenario('PEM', True),
+    rail_depot_scenario('HPRS-W', False, use_battery=False),
+    rail_depot_scenario('PEM', False, use_battery=False),
+    rail_depot_scenario('HPRS-W', False, use_battery=True),
+    rail_depot_scenario('PEM', False, use_battery=True),
+    rail_depot_scenario('HPRS-W', True, use_battery=True),
+    rail_depot_scenario('PEM', True, use_battery=True),
 ]
 if rh_daily_kg <= 0:
     st.warning('No positive rail H₂ demand; cost comparison cannot be interpreted.')
@@ -4842,7 +4862,7 @@ if rh_owned_assets and rh_geo_alloc > 0 and (
         'The PV-only alternatives require no geothermal investment.'
     )
 
-st.markdown('##### Hydrogen cost comparison — five independent alternatives')
+st.markdown('##### Hydrogen cost comparison — six plant alternatives and purchased H₂')
 rh_comparison_rows = [
     {
         'Pathway': s['Label'],
@@ -4873,9 +4893,10 @@ st.dataframe(
     }, na_rep='—'), width='stretch', hide_index=True,
 )
 st.caption(
-    'PV-only means no geothermal plant; grid backup is permitted and included as purchased electricity. '
-    'Grid share is shown above. All four H₂ plants serve the same rail demand and use the same PV/battery sizing. '
-    'They are alternatives, not four simultaneous installations. Purchased H₂ is a user-entered benchmark.'
+    'PV without battery, PV + battery, and PV + geothermal + battery are independently evaluated. '
+    'Grid backup is permitted and charged. Every scenario serves the same modeled H₂ demand; no battery CAPEX/OPEX '
+    'is charged to the no-battery alternatives. Plants are alternatives, not simultaneous purchases. '
+    'Purchased H₂ is a user-entered reference price.'
 )
 
 rh_costed = [s for s in rh_scenarios if s['Complete']]
@@ -4935,17 +4956,17 @@ with st.expander('Amortization formula, per-asset schedule, operating cost and p
     }), width='stretch', hide_index=True)
     rh_line_items = []
     rh_line_items.extend({
-        'Annual cost item': name, 'CHF/year': amount * rh_days,
-        'CHF/kg H₂': amount / max(rh_daily_kg, 1e-9),
+        'Annual cost item': name, 'CHF/year': amount * rh_selected['Operating days/year'],
+        'CHF/kg H₂': amount / max(rh_selected['Daily H₂ kg'], 1e-9),
     } for name, amount in rh_selected['Variable OPEX details'].items())
     rh_line_items.extend({
         'Annual cost item': name, 'CHF/year': amount,
-        'CHF/kg H₂': amount / rh_annual_h2,
+        'CHF/kg H₂': amount / rh_selected['Annual H₂ kg'],
     } for name, amount in rh_selected['Fixed OPEX details'].items())
     rh_line_items.extend({
         'Annual cost item': f"Annualized capital: {a['Asset']}",
         'CHF/year': a['Economic annuity CHF/year'],
-        'CHF/kg H₂': a['Economic annuity CHF/year'] / rh_annual_h2,
+        'CHF/kg H₂': a['Economic annuity CHF/year'] / rh_selected['Annual H₂ kg'],
     } for a in rh_selected['CAPEX schedule'])
     rh_line_items.append({
         'Annual cost item': 'TOTAL (do not add depreciation again)',
@@ -4982,19 +5003,167 @@ with st.expander('Amortization formula, per-asset schedule, operating cost and p
     st.download_button(
         'Download full amortization and OPEX breakdown (CSV)',
         rh_line_df.to_csv(index=False).encode('utf-8'),
-        file_name='hydrogenorg_rail_amortization_v335.csv', mime='text/csv',
+        file_name='hydrogenorg_rail_amortization_v336.csv', mime='text/csv',
     )
     st.download_button(
         'Download selected 24 h dispatch (CSV)',
         rdisp.reset_index().to_csv(index=False).encode('utf-8'),
-        file_name='hydrogenorg_rail_dispatch_v335.csv', mime='text/csv',
+        file_name='hydrogenorg_rail_dispatch_v336.csv', mime='text/csv',
     )
 
 st.download_button(
-    'Download all five hydrogen cost alternatives (CSV)',
+    'Download all seven hydrogen cost alternatives (CSV)',
     rh_compare.to_csv(index=False).encode('utf-8'),
-    file_name='hydrogenorg_rail_all_pathways_v335.csv', mime='text/csv',
+    file_name='hydrogenorg_rail_all_pathways_v336.csv', mime='text/csv',
 )
+
+# ============================================================
+# V3.3.6 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# No fictitious production gains or free renewable energy are assumed.
+# ============================================================
+st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
+st.caption(
+    'Cash CAPEX is allocated once, annualized through a real capital recovery factor, '
+    'and maintenance is charged separately. Straight-line depreciation is INFORMATION only. '
+    'The six production plants are independent alternatives; each produces the same rail H₂ per operating day.'
+)
+rh_investment_rows = []
+for _rs in rh_scenarios:
+    rh_investment_rows.append({
+        'Alternative': _rs['Label'],
+        'Complete costs': 'Yes' if _rs['Complete'] else 'NO — missing costs',
+        'Initial CAPEX CHF': sum(a['Attributed CAPEX CHF'] for a in _rs['CAPEX schedule']),
+        'Capital recovery CHF/year': _rs['Annual capital recovery CHF'],
+        'Maintenance CHF/year': _rs['Annual fixed OPEX CHF'],
+        'Variable CHF/year': _rs['Annual variable OPEX CHF'],
+        'Annual H₂ kg': _rs['Annual H₂ kg'],
+        'Final CHF/kg': _rs['Cost CHF/kg H₂'],
+        'Grid electricity %': _rs['Grid share percent'],
+    })
+rh_investment_df = pd.DataFrame(rh_investment_rows)
+st.dataframe(
+    rh_investment_df.style.format({
+        'Initial CAPEX CHF': '{:,.0f}', 'Capital recovery CHF/year': '{:,.0f}',
+        'Maintenance CHF/year': '{:,.0f}', 'Variable CHF/year': '{:,.0f}',
+        'Annual H₂ kg': '{:,.0f}', 'Final CHF/kg': '{:,.2f}',
+        'Grid electricity %': '{:.1f}',
+    }), width='stretch', hide_index=True,
+)
+st.download_button(
+    'Download investment comparison (CSV)',
+    rh_investment_df.to_csv(index=False).encode('utf-8'),
+    file_name='hydrogenorg_rail_investment_comparison_v336.csv', mime='text/csv',
+)
+
+st.markdown('##### 12B · CHF 10/kg challenge — production utilisation and capital gap')
+rh_target_chfkg = st.number_input(
+    'Target full-cost price (CHF/kg H₂)', min_value=0.1, max_value=100.0,
+    value=10.0, step=0.5, key='rh_target_chfkg',
+    help='Decision threshold only; NOT a performance assumption.',
+)
+st.caption(
+    'The target test preserves daily production capacity, current plant sizing, fixed CAPEX and maintenance. '
+    'It varies operating days/year ONLY. The assumed representative hourly PV profile and grid backup '
+    'do not guarantee real seasonal production, component durability or market demand.'
+)
+rh_break_even_rows = []
+for _rs in rh_scenarios:
+    _daily = _rs['Daily H₂ kg']
+    _variable_day = (_rs['Annual variable OPEX CHF'] /
+                     max(_rs['Operating days/year'], 1))
+    _variable_kg = _variable_day / max(_daily, 1e-12)
+    _fixed_year = _rs['Annual capital recovery CHF'] + _rs['Annual fixed OPEX CHF']
+    _fixed_margin_day = _daily * rh_target_chfkg - _variable_day
+    _required_days = (_fixed_year / _fixed_margin_day
+                      if _fixed_margin_day > 1e-12 else math.inf)
+    _annual_budget_for_capital = (
+        rh_target_chfkg * _rs['Annual H₂ kg']
+        - _rs['Annual variable OPEX CHF'] - _rs['Annual fixed OPEX CHF']
+    )
+    _capital_gap = max(0.0, _rs['Annual capital recovery CHF'] -
+                       max(0.0, _annual_budget_for_capital))
+    _zero_capex_cost = (
+        _variable_kg + _rs['Annual fixed OPEX CHF'] / max(_rs['Annual H₂ kg'], 1e-12)
+    )
+    _required_capital_reduction = (
+        100.0 * _capital_gap / _rs['Annual capital recovery CHF']
+        if _rs['Annual capital recovery CHF'] > 0 else 0.0
+    )
+    _cost_365 = (_variable_kg + _fixed_year / (365.0 * max(_daily, 1e-12)))
+    _feasible_label = (
+        'Uncosted — do not rank' if not _rs['Complete'] else
+        'Already at/below target' if _rs['Cost CHF/kg H₂'] <= rh_target_chfkg else
+        'Not even with zero CAPEX at current days' if _annual_budget_for_capital < 0 else
+        'Possible at <=365 days (screen only)' if _required_days <= 365 else
+        'Not met at 365 days' if math.isfinite(_required_days) else
+        'Impossible with current variable cost'
+    )
+    rh_break_even_rows.append({
+        'Alternative': _rs['Label'],
+        'Cost today CHF/kg': _rs['Cost CHF/kg H₂'],
+        'Variable floor CHF/kg': _variable_kg,
+        'Cost at zero CAPEX CHF/kg': _zero_capex_cost,
+        'Cost at 365 d CHF/kg': _cost_365,
+        'Operating days needed for target': _required_days if math.isfinite(_required_days) else None,
+        'Annual capital gap CHF': _capital_gap,
+        'Capital gap % (fixed OPEX unchanged)': _required_capital_reduction,
+        'Interpretation': _feasible_label,
+    })
+rh_target_df = pd.DataFrame(rh_break_even_rows)
+st.dataframe(rh_target_df.style.format({
+    'Cost today CHF/kg': '{:,.2f}',
+    'Variable floor CHF/kg': '{:,.2f}',
+    'Cost at zero CAPEX CHF/kg': '{:,.2f}',
+    'Cost at 365 d CHF/kg': '{:,.2f}',
+    'Operating days needed for target': '{:,.0f}',
+    'Annual capital gap CHF': '{:,.0f}',
+    'Capital gap % (fixed OPEX unchanged)': '{:.1f}%',
+}, na_rep='—'), width='stretch', hide_index=True)
+st.caption(
+    'Capital gap is the required reduction in ANNUALIZED capital cost at the current H₂ output, '
+    'holding fixed OPEX constant. It is not automatically an achievable reduction in equipment size, '
+    'and does not credit any additional energy or hydrogen production. A negative annual capital '
+    'budget is clipped to zero; the target is then impossible even at zero CAPEX.'
+)
+
+st.markdown('##### 12C · Utilisation stress test — same assets, 200–365 operating days')
+rh_util_days = [200, 250, 300, rh_days, 330, 365]
+rh_util_days = sorted(set(rh_util_days))
+rh_util_data = []
+for _s in rh_scenarios:
+    if not _s['Complete']:
+        continue
+    for _d in rh_util_days:
+        _scaled = rail_depot_scenario(
+            _s['Technology'], _s['With geothermal'],
+            use_battery=_s['Uses battery'], scenario_operating_days=_d,
+        )
+        rh_util_data.append({
+            'Days/year': _d, 'Alternative': _s['Label'],
+            'Cost CHF/kg': _scaled['Cost CHF/kg H₂'],
+        })
+if rh_util_data:
+    rh_util_df = pd.DataFrame(rh_util_data)
+    st.line_chart(
+        rh_util_df.pivot(index='Days/year', columns='Alternative', values='Cost CHF/kg'),
+        height=345,
+    )
+    st.download_button(
+        'Download utilisation sensitivity (CSV)',
+        rh_util_df.to_csv(index=False).encode('utf-8'),
+        file_name='hydrogenorg_rail_utilisation_v336.csv', mime='text/csv',
+    )
+else:
+    st.warning('Enter all necessary investment and operating costs before testing utilisation.')
+
+st.info(
+    'Critical modelling limits: 365 operating days is not a verified PV/plant availability estimate. '
+    'Annual production, demand, grid capacity, curtailment, winter solar irradiation, battery cycling, '
+    'future battery replacement, permits, site-specific geothermal drilling and safety are NOT proven. '
+    'Zero geothermal costs and zero hydrogen-plant CAPEX invalidate an investment comparison. '
+    'A target below CHF 10/kg must be DEMONSTRATED by validated technology and site data, not assumed.'
+)
+
 st.info(
     'Methodological boundaries: Geothermal V4.0 uses a simplified lumped heat-to-power model. '
     'PV production is a repeated representative day, not a Swiss hourly weather year; neither winter production '
@@ -5005,7 +5174,9 @@ st.info(
     'PV/geo CAPEX and geo OPEX are excluded, replaced by an editable electricity/heat transfer price. '
     'Battery and H₂ plant are owned in both cases. Cost analysis excludes project taxes, replacement overhauls, '
     'land/permits, financing fees, hydrogen storage/distribution infrastructure and detailed plant degradation. '
-    'Zero allocated geothermal capital/maintenance makes the owned hybrid comparison incomplete.'
+    'Zero allocated geothermal capital/maintenance makes the owned hybrid comparison incomplete. '
+    'PV without batteries is compared explicitly (grid backup allowed). '
+    'PV with batteries and PV + geothermal carry separate asset annualization.'
 )
 st.link_button(
     'Open separate HydrogenOrg Hybrid Energy simulator',
@@ -5500,4 +5671,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.3.5 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.3.6 · renewable rail-depot H₂ + Pareto + prototype target · Simulation → laboratory validation → proof of concept")
