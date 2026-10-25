@@ -176,6 +176,13 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
+    /* V3.3.3: compact in-page navigation and readable chart areas. */
+    .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
+    .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
+    .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
+    .horg-nav a:hover{background:#d7f0fb;border-color:#58b6db;}
+    .horg-section-anchor{display:block;position:relative;top:-1rem;visibility:hidden;}
+    @media(max-width:720px){.horg-nav{gap:.35rem;padding:.5rem}.horg-nav a{font-size:.77rem;padding:.32rem .52rem}}
     html, body, [data-testid="stAppViewContainer"]{scroll-behavior:auto!important;}
     </style>
     """,
@@ -202,6 +209,22 @@ st.markdown(
       <span class="horg-chip">H₂O–Ar RF concept · ~1 bar</span>
       <span class="horg-chip">Rail mission + fuel-cell hybrid</span>
     </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# V3.3.3: compact section navigation. Internal anchors do not change model state.
+st.markdown(
+    """
+    <nav class="horg-nav" aria-label="Simulator section navigation">
+      <span class="horg-nav-label">Jump to:</span>
+      <a href="#horg-graphics">Research charts</a>
+      <a href="#horg-automotive">Automotive results</a>
+      <a href="#horg-rf">HPRS-W &amp; RF</a>
+      <a href="#horg-advanced">Advanced theory</a>
+      <a href="#horg-rail">Rail simulator</a>
+      <a href="#horg-references">References</a>
+    </nav>
     """,
     unsafe_allow_html=True,
 )
@@ -303,7 +326,7 @@ st.caption(
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.3.1, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.3.3, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -2620,9 +2643,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.3.2: Always-visible charts restored without expanding long analysis sections.
+# V3.3.3: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
-st.subheader("Research graphics dashboard · V3.3.2")
+st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
+st.subheader("Research graphics dashboard · V3.3.3")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -2640,10 +2664,10 @@ _chart_summary = pd.DataFrame({
 _ch1, _ch2 = st.columns(2)
 with _ch1:
     st.markdown("**Operating-cost comparison**")
-    st.bar_chart(_chart_summary[["CHF / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=300)
+    st.bar_chart(_chart_summary[["CHF / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=360)
 with _ch2:
     st.markdown("**External electrical demand**")
-    st.bar_chart(_chart_summary[["External electricity kWh / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=300)
+    st.bar_chart(_chart_summary[["External electricity kWh / kWh net shaft"]].replace([math.inf, -math.inf], float("nan")), height=360)
 st.caption(
     "Electricity chart excludes chemical fuel energy and separately supplied heat; "
     "use the detailed comparison for total energy and carbon accounting. "
@@ -2666,7 +2690,7 @@ if v29_thermo_points and v30_cost_eff_pareto_points:
         for p in v30_cost_eff_pareto_points
     )
     st.scatter_chart(pd.DataFrame(_pareto_preview), x="Cost CHF/kWh net",
-                     y="Efficiency %", color="Series", height=340)
+                     y="Efficiency %", color="Series", height=390)
 else:
     st.info("No thermodynamically feasible Pareto points for the current search settings.")
 st.caption(
@@ -2676,6 +2700,7 @@ st.caption(
 )
 
 st.markdown("---")
+st.markdown('<span id="horg-automotive" class="horg-section-anchor"></span>', unsafe_allow_html=True)
 with st.expander("Automotive / legacy pathway results — open when needed", expanded=False):
     st.caption(f"Current comparison focus: **{comparison_focus}**")
 
@@ -3481,6 +3506,7 @@ with st.expander("Automotive / legacy pathway results — open when needed", exp
     )
 
 
+st.markdown('<span id="horg-rf" class="horg-section-anchor"></span>', unsafe_allow_html=True)
 st.subheader("Hypothesis 4 — HPRS-W Plasma Water Splitting")
 
 st.caption(
@@ -3546,7 +3572,7 @@ for _f_khz in _v33_freqs:
     })
 
 st.markdown("##### RF pulse frequency · H₂ output capacity")
-st.line_chart(pd.DataFrame(_v33_rows).set_index("Pulse envelope (kHz)")[["Delivered H2 capacity (kg/h)"]], height=280)
+st.line_chart(pd.DataFrame(_v33_rows).set_index("Pulse envelope (kHz)")[["Delivered H2 capacity (kg/h)"]], height=330)
 st.caption("Capacity scaling only: constant pulse width, peak RF power, coupling and specific energy; not an efficiency gain.")
 
 with st.expander("V3.3 pulse-frequency capacity sweep", expanded=False):
@@ -3563,7 +3589,7 @@ with st.expander("V3.3 pulse-frequency capacity sweep", expanded=False):
             "Gross H2 capacity (kg/h)": "{:.3f}",
             "Delivered H2 capacity (kg/h)": "{:.3f}",
         }),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
     )
 
@@ -3603,6 +3629,7 @@ st.markdown(
 )
 
 st.markdown("---")
+st.markdown('<span id="horg-advanced" class="horg-section-anchor"></span>', unsafe_allow_html=True)
 with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", expanded=False):
     st.subheader("V3.3 Advanced Theoretical Analysis — HPRS-W")
     st.caption(
@@ -4037,7 +4064,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
                 _v30_decision_rows.append(_row)
 
         st.markdown("##### Representative V3.3 decision points")
-        st.dataframe(_v30_decision_rows, use_container_width=True, hide_index=True)
+        st.dataframe(_v30_decision_rows, width="stretch", hide_index=True)
 
         if v30_knee_point is not None:
             _k = v30_knee_point
@@ -4179,7 +4206,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
         _v31_rows.append(_v31_comparison_row("Pareto knee — theoretical decision proxy", v30_knee_point))
 
     st.markdown("##### Current point vs prototype target vs Pareto knee")
-    st.dataframe(_v31_rows, use_container_width=True, hide_index=True)
+    st.dataframe(_v31_rows, width="stretch", hide_index=True)
 
     if v31_prototype_target is not None:
         _pt = v31_prototype_target
@@ -4249,6 +4276,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 # ============================================================
 
 st.markdown("---")
+st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
 st.subheader("V3.3 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
@@ -4435,7 +4463,7 @@ st.dataframe(
         "Modeled operating energy cost (CHF/km)": "{:.2f}",
         "Water makeup (L/km)": "{:.3f}",
     }),
-    use_container_width=True,
+    width="stretch",
     hide_index=True,
 )
 
@@ -4446,14 +4474,14 @@ with rc1:
         "Pathway": ["Direct electric", "Stored H2", "Depot HPRS-W"],
         "kWh input / train-km": [rail_direct_external_kwh_per_km, rail_h2_tank_energy_kwh_per_km, rail_hprsw_external_kwh_per_km],
     }).set_index("Pathway")
-    st.bar_chart(_rail_energy_chart, height=320)
+    st.bar_chart(_rail_energy_chart, height=365)
 with rc2:
     st.markdown("##### Modeled energy-cost comparison")
     _rail_cost_chart = pd.DataFrame({
         "Pathway": ["Direct electric", "Stored H2", "Depot HPRS-W"],
         "CHF / train-km": [rail_direct_cost_per_km, rail_h2_cost_per_km, rail_hprsw_cost_per_km],
     }).set_index("Pathway")
-    st.bar_chart(_rail_cost_chart, height=320)
+    st.bar_chart(_rail_cost_chart, height=365)
 
 st.markdown("#### 11 · HPRS-W rail diagnosis")
 rd1, rd2, rd3, rd4 = st.columns(4)
@@ -4535,6 +4563,7 @@ with st.expander("Rail public references and model equations"):
 
 
 st.markdown("---")
+st.markdown('<span id="horg-references" class="horg-section-anchor"></span>', unsafe_allow_html=True)
 with st.expander("Full scientific comparison, automotive hypotheses and references", expanded=False):
     st.subheader("V3.3 Scientific Comparison — Same Net Shaft Power")
 
