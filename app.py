@@ -149,9 +149,34 @@ st.markdown(
     .horg-exec-card span{font-size:.88rem;line-height:1.45;color:#c5d9e4;}
     .horg-exec-foot{margin-top:.8rem;padding-top:.7rem;border-top:1px solid rgba(255,255,255,.14);font-size:.82rem;color:#adc4d1;line-height:1.5;}
     @media(max-width:900px){.horg-exec-grid{grid-template-columns:1fr;}}
-    div[data-testid="stMetric"]{background:#fff;border:1px solid var(--line);padding:.65rem .8rem;border-radius:14px;}
-    div[data-testid="stMetricLabel"]{color:#6b8294;}
-    div[data-testid="stMetricValue"]{font-size:1.62rem;}
+    /* V3.3.1 UI fix: metric cards remain readable in Streamlit dark mode. */
+    div[data-testid="stMetric"]{
+        background:#ffffff!important;
+        border:1px solid var(--line)!important;
+        padding:.65rem .8rem!important;
+        border-radius:14px!important;
+    }
+    div[data-testid="stMetric"] *,
+    div[data-testid="stMetricLabel"] *,
+    div[data-testid="stMetricValue"] *,
+    div[data-testid="stMetricValue"]{
+        color:#0b1724!important;
+        -webkit-text-fill-color:#0b1724!important;
+        opacity:1!important;
+    }
+    div[data-testid="stMetricLabel"] p{
+        color:#526b80!important;
+        -webkit-text-fill-color:#526b80!important;
+        font-weight:700!important;
+    }
+    div[data-testid="stMetricValue"]{font-size:1.62rem!important;font-weight:900!important;}
+    div[data-testid="stMetricDelta"] *,
+    div[data-testid="stMetricDelta"]{
+        color:#15803d!important;
+        -webkit-text-fill-color:#15803d!important;
+        opacity:1!important;
+    }
+    html, body, [data-testid="stAppViewContainer"]{scroll-behavior:auto!important;}
     </style>
     """,
     unsafe_allow_html=True,
@@ -160,7 +185,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.3.1</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -272,8 +297,13 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+st.caption(
+    "V3.3.1 display optimization: long legacy and advanced-analysis sections are collapsed by default. "
+    "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
+)
+
 st.info(
-    "Four automotive pathways are retained from V3.3, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.3.1, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -2590,808 +2620,811 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-st.caption(f"Current comparison focus: **{comparison_focus}**")
+st.markdown("---")
+with st.expander("Automotive / legacy pathway results — open when needed", expanded=False):
+    st.caption(f"Current comparison focus: **{comparison_focus}**")
 
-st.subheader("Scenario result")
+    st.subheader("Scenario result")
 
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Fuel to reactor", f"{fuel_kg_h:.1f} kg/h", f"{fuel_l_h:.1f} L/h")
-c2.metric("H₂ to engine", f"{h2_to_engine_kg_h:.2f} kg/h")
-c3.metric("Solid C captured", f"{carbon_captured_kg_h:.1f} kg/h")
-c4.metric("Net shaft after plasma", f"{net_shaft_kw:.1f} kW")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Fuel to reactor", f"{fuel_kg_h:.1f} kg/h", f"{fuel_l_h:.1f} L/h")
+    c2.metric("H₂ to engine", f"{h2_to_engine_kg_h:.2f} kg/h")
+    c3.metric("Solid C captured", f"{carbon_captured_kg_h:.1f} kg/h")
+    c4.metric("Net shaft after plasma", f"{net_shaft_kw:.1f} kW")
 
-c5, c6, c7, c8 = st.columns(4)
-c5.metric("Gross plasma demand", f"{plasma_gross_kw:.1f} kW")
-c6.metric("Effective plasma SEI", f"{effective_plasma_sei:.2f} kWh/kg H₂")
-c7.metric("CO₂-equivalent carbon retained*", f"{co2_retention_equiv_kg_h:.1f} kg/h")
-c8.metric("HPRS net fuel-to-shaft efficiency", f"{100*hprs_net_eff:.1f}%")
+    c5, c6, c7, c8 = st.columns(4)
+    c5.metric("Gross plasma demand", f"{plasma_gross_kw:.1f} kW")
+    c6.metric("Effective plasma SEI", f"{effective_plasma_sei:.2f} kWh/kg H₂")
+    c7.metric("CO₂-equivalent carbon retained*", f"{co2_retention_equiv_kg_h:.1f} kg/h")
+    c8.metric("HPRS net fuel-to-shaft efficiency", f"{100*hprs_net_eff:.1f}%")
 
-st.caption(
-    "*CO₂-equivalent carbon retained is the CO₂ mass the captured carbon could form if fully oxidized. "
-    "It is not a lifecycle-emissions claim or a measured tailpipe value."
-)
-
-if thermo_adequacy_ratio < 1.0:
-    st.error(
-        "RED — below thermodynamic floor. The selected plasma electrical input "
-        "is below the ideal standard-state decomposition floor for the modeled "
-        "hydrogen production."
-    )
-elif net_shaft_kw <= 0:
-    st.error(
-        "RED — plasma burden exceeds shaft output. The equivalent shaft demand "
-        "required to supply the plasma is greater than the gross H₂-engine output."
-    )
-elif hprs_net_eff >= conventional_eff:
-    st.success(
-        "GREEN — favourable within selected assumptions. The simplified HPRS "
-        "net efficiency reaches or exceeds the selected conventional benchmark. "
-        "This is a scenario result, not validated hardware performance."
-    )
-else:
-    st.warning(
-        "ORANGE — carbon retention remains interesting, but the simplified net "
-        "fuel-to-shaft efficiency is below the selected conventional gasoline benchmark."
-    )
-
-st.subheader("Pulsed Plasma Control")
-
-if plasma_mode == "Pulsed plasma":
-    p1, p2, p3, p4 = st.columns(4)
-    p1.metric("Pulse frequency", f"{pulse_frequency_khz:.1f} kHz")
-    p2.metric("Average pulsed electrical power", f"{derived_pulse_power_kw:.2f} kW")
-    p3.metric("Per-cell duty cycle", f"{pulse_duty_cycle:.3f}%")
-    p4.metric("Thermodynamic adequacy", f"{100*thermo_adequacy_ratio:.1f}%")
-
-    p5, p6 = st.columns(2)
-    p5.metric("Peak power per active cell", f"{pulse_peak_power_kw_per_cell:.1f} kW")
-    p6.metric("Active plasma cells", f"{active_cells}")
-
-    st.markdown(
-        f"""
-        <div class="horg-note">
-        <b>Pulse-power equation:</b>
-        P<sub>avg</sub> = E<sub>pulse</sub> × f × N<sub>cells</sub>.<br><br>
-        {pulse_energy_mj:.1f} mJ/pulse ×
-        {pulse_frequency_khz:.1f} kHz ×
-        {active_cells} cells =
-        <b>{derived_pulse_power_kw:.2f} kW average electrical power</b>.<br>
-        At the current modeled H₂ production this corresponds to
-        <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        f"""
-        <div class="horg-note">
-        <b>Frequency sensitivity:</b><br>
-        With pulse energy fixed at <b>{pulse_energy_mj:.1f} mJ</b> and
-        <b>{active_cells}</b> active cells, every +1 kHz increases average
-        plasma electrical power by approximately
-        <b>{pulse_energy_mj * active_cells / 1000.0:.3f} kW</b>.
-        </div>
-        """,
-        unsafe_allow_html=True,
+    st.caption(
+        "*CO₂-equivalent carbon retained is the CO₂ mass the captured carbon could form if fully oxidized. "
+        "It is not a lifecycle-emissions claim or a measured tailpipe value."
     )
 
     if thermo_adequacy_ratio < 1.0:
         st.error(
-            f"Even at the ideal thermodynamic floor, these pulse settings could "
-            f"support at most about {max_h2_at_thermo_floor_kg_h:.2f} kg H₂/h, "
-            f"while the model currently assumes {h2_gross_kg_h:.2f} kg H₂/h gross production."
+            "RED — below thermodynamic floor. The selected plasma electrical input "
+            "is below the ideal standard-state decomposition floor for the modeled "
+            "hydrogen production."
         )
-else:
+    elif net_shaft_kw <= 0:
+        st.error(
+            "RED — plasma burden exceeds shaft output. The equivalent shaft demand "
+            "required to supply the plasma is greater than the gross H₂-engine output."
+        )
+    elif hprs_net_eff >= conventional_eff:
+        st.success(
+            "GREEN — favourable within selected assumptions. The simplified HPRS "
+            "net efficiency reaches or exceeds the selected conventional benchmark. "
+            "This is a scenario result, not validated hardware performance."
+        )
+    else:
+        st.warning(
+            "ORANGE — carbon retention remains interesting, but the simplified net "
+            "fuel-to-shaft efficiency is below the selected conventional gasoline benchmark."
+        )
+
+    st.subheader("Pulsed Plasma Control")
+
+    if plasma_mode == "Pulsed plasma":
+        p1, p2, p3, p4 = st.columns(4)
+        p1.metric("Pulse frequency", f"{pulse_frequency_khz:.1f} kHz")
+        p2.metric("Average pulsed electrical power", f"{derived_pulse_power_kw:.2f} kW")
+        p3.metric("Per-cell duty cycle", f"{pulse_duty_cycle:.3f}%")
+        p4.metric("Thermodynamic adequacy", f"{100*thermo_adequacy_ratio:.1f}%")
+
+        p5, p6 = st.columns(2)
+        p5.metric("Peak power per active cell", f"{pulse_peak_power_kw_per_cell:.1f} kW")
+        p6.metric("Active plasma cells", f"{active_cells}")
+
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            <b>Pulse-power equation:</b>
+            P<sub>avg</sub> = E<sub>pulse</sub> × f × N<sub>cells</sub>.<br><br>
+            {pulse_energy_mj:.1f} mJ/pulse ×
+            {pulse_frequency_khz:.1f} kHz ×
+            {active_cells} cells =
+            <b>{derived_pulse_power_kw:.2f} kW average electrical power</b>.<br>
+            At the current modeled H₂ production this corresponds to
+            <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            <b>Frequency sensitivity:</b><br>
+            With pulse energy fixed at <b>{pulse_energy_mj:.1f} mJ</b> and
+            <b>{active_cells}</b> active cells, every +1 kHz increases average
+            plasma electrical power by approximately
+            <b>{pulse_energy_mj * active_cells / 1000.0:.3f} kW</b>.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if thermo_adequacy_ratio < 1.0:
+            st.error(
+                f"Even at the ideal thermodynamic floor, these pulse settings could "
+                f"support at most about {max_h2_at_thermo_floor_kg_h:.2f} kg H₂/h, "
+                f"while the model currently assumes {h2_gross_kg_h:.2f} kg H₂/h gross production."
+            )
+    else:
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            Continuous reference mode uses
+            <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>.
+            Select <b>Pulsed plasma</b> in the sidebar to calculate average power
+            from pulse energy, frequency and active cell count.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    left, right = st.columns([1.05, 0.95])
+    with left:
+        st.subheader("Mass balance")
+        st.dataframe(
+            {
+                "Stream": [
+                    "Fuel to plasma reactor",
+                    "Gross H₂ produced",
+                    "H₂ delivered to engine",
+                    "Solid carbon generated",
+                    "Solid carbon captured",
+                    "Uncaptured solid-carbon fraction",
+                ],
+                "kg/h": [
+                    fuel_kg_h,
+                    h2_gross_kg_h,
+                    h2_to_engine_kg_h,
+                    carbon_generated_kg_h,
+                    carbon_captured_kg_h,
+                    carbon_uncaptured_kg_h,
+                ],
+            },
+            width="stretch",
+            hide_index=True,
+        )
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            <b>Ideal stoichiometry per 1 kg n-octane:</b><br>
+            H₂ = {H2_KG_PER_KG_FUEL_IDEAL:.3f} kg · C(s) = {C_KG_PER_KG_FUEL_IDEAL:.3f} kg.<br><br>
+            With {reactor_conversion*100:.0f}% overall conversion and {h2_recovery*100:.0f}% H₂ recovery,
+            the effective scenario yield is {effective_h2_yield:.3f} kg H₂/kg fuel.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with right:
+        st.subheader("Energy balance")
+        st.dataframe(
+            {
+                "Quantity": [
+                    "Fuel chemical input (reference LHV)",
+                    "H₂ chemical energy to engine",
+                    "Gross H₂-engine shaft output",
+                    "Gross plasma electricity",
+                    "Recovered-energy offset",
+                    "External plasma electricity",
+                    "Equivalent shaft draw for plasma",
+                    "Net shaft after plasma burden",
+                ],
+                "kW": [
+                    fuel_chemical_kw,
+                    h2_chemical_kw,
+                    gross_engine_kw,
+                    plasma_gross_kw,
+                    plasma_gross_kw * recovery_offset,
+                    plasma_external_kw,
+                    shaft_draw_for_plasma_kw,
+                    net_shaft_kw,
+                ],
+            },
+            width="stretch",
+            hide_index=True,
+        )
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            <b>Thermodynamic floor:</b> ideal standard-state n-octane decomposition requires about
+            <b>{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂</b> before real reactor, heat-transfer,
+            separation and auxiliary losses.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    st.subheader("Required Plasma Efficiency to Reach Target Power")
+    st.caption(
+        "Works backwards from desired net shaft power to the maximum plasma burden "
+        "the system can tolerate under the selected recovery and generator assumptions."
+    )
+
+    # Show up to three requested engineering target cards.
+    target_cols = st.columns(min(3, max(1, len(target_levels_kw))))
+    for idx, target_kw in enumerate(target_levels_kw[:3]):
+        allowed_kw = max_plasma_gross_power_for_target(target_kw)
+        allowed_sei = max_plasma_sei_for_target(target_kw)
+        delta_txt = (
+            "above thermodynamic floor"
+            if allowed_sei >= THERMO_MIN_KWH_PER_KG_H2
+            else "below thermodynamic floor"
+        )
+        target_cols[idx].metric(
+            f"Target {target_kw:.0f} kW net",
+            f"{allowed_sei:.2f} kWh/kg H₂",
+            delta_txt,
+        )
+
+    target_table = []
+    for target_kw in target_levels_kw:
+        allowed_kw = max_plasma_gross_power_for_target(target_kw)
+        allowed_sei = max_plasma_sei_for_target(target_kw)
+        reduction_needed = (
+            max(0.0, 1.0 - allowed_sei / effective_plasma_sei) * 100.0
+            if effective_plasma_sei > 0 and math.isfinite(allowed_sei)
+            else 0.0
+        )
+        target_table.append({
+            "Target net shaft": f"{target_kw:.0f} kW",
+            "Max gross plasma power": f"{allowed_kw:.2f} kW",
+            "Max plasma SEI": f"{allowed_sei:.2f} kWh/kg H₂",
+            "SEI reduction vs current": f"{reduction_needed:.1f}%",
+            "Thermodynamic check": (
+                "Potentially compatible"
+                if allowed_sei >= THERMO_MIN_KWH_PER_KG_H2
+                else "Below thermodynamic floor"
+            ),
+        })
+
+    st.dataframe(target_table, width="stretch", hide_index=True)
+
     st.markdown(
         f"""
         <div class="horg-note">
-        Continuous reference mode uses
-        <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>.
-        Select <b>Pulsed plasma</b> in the sidebar to calculate average power
-        from pulse energy, frequency and active cell count.
+        <b>Best-case thermodynamic ceiling for the current operating point:</b><br>
+        At the ideal standard-state decomposition floor of
+        <b>{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂</b>,
+        the plasma would consume about <b>{plasma_floor_kw:.2f} kW</b> gross electricity.
+        With the selected recovered-energy offset and generator efficiency,
+        a {gross_engine_kw:.0f} kW gross H₂ engine would then leave about
+        <b>{max_net_at_thermo_floor_kw:.1f} kW net shaft power</b>.
+        This is an ideal thermodynamic ceiling, not a realistic reactor prediction.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-left, right = st.columns([1.05, 0.95])
-with left:
-    st.subheader("Mass balance")
-    st.dataframe(
-        {
-            "Stream": [
-                "Fuel to plasma reactor",
-                "Gross H₂ produced",
-                "H₂ delivered to engine",
-                "Solid carbon generated",
-                "Solid carbon captured",
-                "Uncaptured solid-carbon fraction",
-            ],
-            "kg/h": [
-                fuel_kg_h,
-                h2_gross_kg_h,
-                h2_to_engine_kg_h,
-                carbon_generated_kg_h,
-                carbon_captured_kg_h,
-                carbon_uncaptured_kg_h,
-            ],
-        },
-        width="stretch",
-        hide_index=True,
-    )
-    st.markdown(
-        f"""
-        <div class="horg-note">
-        <b>Ideal stoichiometry per 1 kg n-octane:</b><br>
-        H₂ = {H2_KG_PER_KG_FUEL_IDEAL:.3f} kg · C(s) = {C_KG_PER_KG_FUEL_IDEAL:.3f} kg.<br><br>
-        With {reactor_conversion*100:.0f}% overall conversion and {h2_recovery*100:.0f}% H₂ recovery,
-        the effective scenario yield is {effective_h2_yield:.3f} kg H₂/kg fuel.
-        </div>
-        """,
-        unsafe_allow_html=True,
+    default_target = int(min(80.0, float(gross_engine_kw)))
+    target_net_kw = st.slider(
+        "Custom target net shaft power (kW)",
+        min_value=0,
+        max_value=int(gross_engine_kw),
+        value=default_target,
+        step=5,
     )
 
-with right:
-    st.subheader("Energy balance")
-    st.dataframe(
-        {
-            "Quantity": [
-                "Fuel chemical input (reference LHV)",
-                "H₂ chemical energy to engine",
-                "Gross H₂-engine shaft output",
-                "Gross plasma electricity",
-                "Recovered-energy offset",
-                "External plasma electricity",
-                "Equivalent shaft draw for plasma",
-                "Net shaft after plasma burden",
-            ],
-            "kW": [
-                fuel_chemical_kw,
-                h2_chemical_kw,
-                gross_engine_kw,
-                plasma_gross_kw,
-                plasma_gross_kw * recovery_offset,
-                plasma_external_kw,
-                shaft_draw_for_plasma_kw,
-                net_shaft_kw,
-            ],
-        },
-        width="stretch",
-        hide_index=True,
-    )
-    st.markdown(
-        f"""
-        <div class="horg-note">
-        <b>Thermodynamic floor:</b> ideal standard-state n-octane decomposition requires about
-        <b>{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂</b> before real reactor, heat-transfer,
-        separation and auxiliary losses.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-st.subheader("Required Plasma Efficiency to Reach Target Power")
-st.caption(
-    "Works backwards from desired net shaft power to the maximum plasma burden "
-    "the system can tolerate under the selected recovery and generator assumptions."
-)
-
-# Show up to three requested engineering target cards.
-target_cols = st.columns(min(3, max(1, len(target_levels_kw))))
-for idx, target_kw in enumerate(target_levels_kw[:3]):
-    allowed_kw = max_plasma_gross_power_for_target(target_kw)
-    allowed_sei = max_plasma_sei_for_target(target_kw)
-    delta_txt = (
-        "above thermodynamic floor"
-        if allowed_sei >= THERMO_MIN_KWH_PER_KG_H2
-        else "below thermodynamic floor"
-    )
-    target_cols[idx].metric(
-        f"Target {target_kw:.0f} kW net",
-        f"{allowed_sei:.2f} kWh/kg H₂",
-        delta_txt,
-    )
-
-target_table = []
-for target_kw in target_levels_kw:
-    allowed_kw = max_plasma_gross_power_for_target(target_kw)
-    allowed_sei = max_plasma_sei_for_target(target_kw)
-    reduction_needed = (
-        max(0.0, 1.0 - allowed_sei / effective_plasma_sei) * 100.0
-        if effective_plasma_sei > 0 and math.isfinite(allowed_sei)
+    custom_allowed_plasma_kw = max_plasma_gross_power_for_target(target_net_kw)
+    custom_allowed_sei = max_plasma_sei_for_target(target_net_kw)
+    custom_reduction_pct = (
+        max(0.0, 1.0 - custom_allowed_sei / effective_plasma_sei) * 100.0
+        if effective_plasma_sei > 0 and math.isfinite(custom_allowed_sei)
         else 0.0
     )
-    target_table.append({
-        "Target net shaft": f"{target_kw:.0f} kW",
-        "Max gross plasma power": f"{allowed_kw:.2f} kW",
-        "Max plasma SEI": f"{allowed_sei:.2f} kWh/kg H₂",
-        "SEI reduction vs current": f"{reduction_needed:.1f}%",
-        "Thermodynamic check": (
-            "Potentially compatible"
-            if allowed_sei >= THERMO_MIN_KWH_PER_KG_H2
-            else "Below thermodynamic floor"
-        ),
-    })
 
-st.dataframe(target_table, width="stretch", hide_index=True)
+    q1, q2, q3, q4 = st.columns(4)
+    q1.metric("Allowed gross plasma power", f"{custom_allowed_plasma_kw:.2f} kW")
+    q2.metric("Required max plasma SEI", f"{custom_allowed_sei:.2f} kWh/kg H₂")
+    q3.metric("SEI reduction vs current", f"{custom_reduction_pct:.1f}%")
+    q4.metric("Ideal thermodynamic floor", f"{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂")
 
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Best-case thermodynamic ceiling for the current operating point:</b><br>
-    At the ideal standard-state decomposition floor of
-    <b>{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂</b>,
-    the plasma would consume about <b>{plasma_floor_kw:.2f} kW</b> gross electricity.
-    With the selected recovered-energy offset and generator efficiency,
-    a {gross_engine_kw:.0f} kW gross H₂ engine would then leave about
-    <b>{max_net_at_thermo_floor_kw:.1f} kW net shaft power</b>.
-    This is an ideal thermodynamic ceiling, not a realistic reactor prediction.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+    if custom_allowed_sei >= THERMO_MIN_KWH_PER_KG_H2:
+        target_margin = custom_allowed_sei / THERMO_MIN_KWH_PER_KG_H2
+        st.success(
+            f"The {target_net_kw:.0f} kW net target is not excluded by the model's "
+            f"standard-state thermodynamic floor. Plasma electricity would need to be "
+            f"no more than {custom_allowed_sei:.2f} kWh/kg H₂ gross, giving a "
+            f"{target_margin:.2f}× margin over the ideal floor."
+        )
+    else:
+        st.error(
+            f"The {target_net_kw:.0f} kW net target would require only "
+            f"{custom_allowed_sei:.2f} kWh/kg H₂, below the ideal standard-state "
+            f"floor of {THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂. With the current "
+            f"gross engine power and selected recovery assumptions, this target is "
+            f"not reachable in the simplified model."
+        )
 
-default_target = int(min(80.0, float(gross_engine_kw)))
-target_net_kw = st.slider(
-    "Custom target net shaft power (kW)",
-    min_value=0,
-    max_value=int(gross_engine_kw),
-    value=default_target,
-    step=5,
-)
+    if plasma_mode == "Pulsed plasma":
+        per_cell_avg_kw = (
+            pulse_energy_mj * 1e-3
+            * pulse_frequency_khz * 1e3
+            / 1000.0
+        )
+        max_cells_for_target = (
+            math.floor(custom_allowed_plasma_kw / per_cell_avg_kw)
+            if per_cell_avg_kw > 0 and math.isfinite(custom_allowed_plasma_kw)
+            else 0
+        )
+        required_pulse_energy_mj_at_current_cells = (
+            custom_allowed_plasma_kw * 1000.0
+            / (pulse_frequency_khz * 1e3 * active_cells)
+            * 1000.0
+            if pulse_frequency_khz > 0 and active_cells > 0
+            else math.inf
+        )
+        st.markdown(
+            f"""
+            <div class="horg-note">
+            <b>Pulsed-plasma translation for the selected target:</b><br>
+            At the current pulse energy and frequency, one active cell averages
+            <b>{per_cell_avg_kw:.4f} kW</b> electrical power.
+            To remain below the {target_net_kw:.0f} kW net-power ceiling, the purely
+            electrical model allows approximately <b>{max_cells_for_target} active cells</b>.<br><br>
+            Alternatively, keeping {active_cells} cells and {pulse_frequency_khz:.1f} kHz,
+            the average pulse energy would need to be no more than about
+            <b>{required_pulse_energy_mj_at_current_cells:.2f} mJ per pulse per cell</b>.<br><br>
+            These are electrical ceilings only. They do not establish reactor throughput,
+            conversion, hydrogen yield or carbon-removal performance.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-custom_allowed_plasma_kw = max_plasma_gross_power_for_target(target_net_kw)
-custom_allowed_sei = max_plasma_sei_for_target(target_net_kw)
-custom_reduction_pct = (
-    max(0.0, 1.0 - custom_allowed_sei / effective_plasma_sei) * 100.0
-    if effective_plasma_sei > 0 and math.isfinite(custom_allowed_sei)
-    else 0.0
-)
 
-q1, q2, q3, q4 = st.columns(4)
-q1.metric("Allowed gross plasma power", f"{custom_allowed_plasma_kw:.2f} kW")
-q2.metric("Required max plasma SEI", f"{custom_allowed_sei:.2f} kWh/kg H₂")
-q3.metric("SEI reduction vs current", f"{custom_reduction_pct:.1f}%")
-q4.metric("Ideal thermodynamic floor", f"{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂")
+    # ============================================================
+    # WHAT MUST CHANGE TO REACH THE SELECTED TARGET?
+    # ============================================================
 
-if custom_allowed_sei >= THERMO_MIN_KWH_PER_KG_H2:
-    target_margin = custom_allowed_sei / THERMO_MIN_KWH_PER_KG_H2
-    st.success(
-        f"The {target_net_kw:.0f} kW net target is not excluded by the model's "
-        f"standard-state thermodynamic floor. Plasma electricity would need to be "
-        f"no more than {custom_allowed_sei:.2f} kWh/kg H₂ gross, giving a "
-        f"{target_margin:.2f}× margin over the ideal floor."
+    st.subheader("What must change to reach the selected target?")
+
+    st.caption(
+        "Design diagnosis: each lever is varied one at a time while the other current "
+        "assumptions are held fixed. These are model requirements, not validated hardware predictions."
     )
-else:
-    st.error(
-        f"The {target_net_kw:.0f} kW net target would require only "
-        f"{custom_allowed_sei:.2f} kWh/kg H₂, below the ideal standard-state "
-        f"floor of {THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂. With the current "
-        f"gross engine power and selected recovery assumptions, this target is "
-        f"not reachable in the simplified model."
+
+    def net_fraction_for_specific_plasma_energy(
+        sei_kwh_per_kg_h2,
+        engine_efficiency,
+        recovery_fraction,
+    ):
+        """
+        Fraction of gross H2-engine shaft power left after the modeled plasma
+        electrical burden, assuming plasma specific electricity scales with H2 flow.
+        """
+        if (
+            engine_efficiency <= 0
+            or h2_recovery <= 0
+            or generator_eff <= 0
+        ):
+            return -math.inf
+
+        plasma_burden_fraction = (
+            sei_kwh_per_kg_h2
+            * (1.0 - recovery_fraction)
+            / (
+                generator_eff
+                * engine_efficiency
+                * H2_LHV_KWH_KG
+                * h2_recovery
+            )
+        )
+        return 1.0 - plasma_burden_fraction
+
+
+    # 1) Gross engine power required if current plasma specific electricity is kept.
+    current_specific_net_fraction = net_fraction_for_specific_plasma_energy(
+        effective_plasma_sei,
+        engine_eff,
+        recovery_offset,
     )
 
-if plasma_mode == "Pulsed plasma":
-    per_cell_avg_kw = (
-        pulse_energy_mj * 1e-3
-        * pulse_frequency_khz * 1e3
-        / 1000.0
+    required_gross_engine_current_sei_kw = (
+        target_net_kw / current_specific_net_fraction
+        if target_net_kw > 0 and current_specific_net_fraction > 0
+        else (0.0 if target_net_kw == 0 else math.inf)
     )
-    max_cells_for_target = (
-        math.floor(custom_allowed_plasma_kw / per_cell_avg_kw)
-        if per_cell_avg_kw > 0 and math.isfinite(custom_allowed_plasma_kw)
-        else 0
+
+    # 2) Gross engine power required in the ideal thermodynamic-floor case.
+    floor_specific_net_fraction = net_fraction_for_specific_plasma_energy(
+        THERMO_MIN_KWH_PER_KG_H2,
+        engine_eff,
+        recovery_offset,
     )
-    required_pulse_energy_mj_at_current_cells = (
-        custom_allowed_plasma_kw * 1000.0
-        / (pulse_frequency_khz * 1e3 * active_cells)
-        * 1000.0
-        if pulse_frequency_khz > 0 and active_cells > 0
+
+    required_gross_engine_floor_kw = (
+        target_net_kw / floor_specific_net_fraction
+        if target_net_kw > 0 and floor_specific_net_fraction > 0
+        else (0.0 if target_net_kw == 0 else math.inf)
+    )
+
+    # 3) H2 engine efficiency required at current gross engine power and current plasma SEI.
+    if target_net_kw < gross_engine_kw:
+        required_engine_eff = (
+            gross_engine_kw
+            * effective_plasma_sei
+            * (1.0 - recovery_offset)
+            / (
+                (gross_engine_kw - target_net_kw)
+                * H2_LHV_KWH_KG
+                * h2_recovery
+                * generator_eff
+            )
+        )
+    elif (
+        target_net_kw == gross_engine_kw
+        and effective_plasma_sei == 0
+    ):
+        required_engine_eff = engine_eff
+    else:
+        required_engine_eff = math.inf
+
+    # Same calculation if the plasma could reach the ideal thermodynamic floor.
+    if target_net_kw < gross_engine_kw:
+        required_engine_eff_at_floor = (
+            gross_engine_kw
+            * THERMO_MIN_KWH_PER_KG_H2
+            * (1.0 - recovery_offset)
+            / (
+                (gross_engine_kw - target_net_kw)
+                * H2_LHV_KWH_KG
+                * h2_recovery
+                * generator_eff
+            )
+        )
+    else:
+        required_engine_eff_at_floor = math.inf
+
+    # 4) Recovered-energy offset required at current gross engine power and current plasma SEI.
+    current_plasma_power_at_specific_sei_kw = (
+        gross_engine_kw
+        * effective_plasma_sei
+        / (
+            engine_eff
+            * H2_LHV_KWH_KG
+            * h2_recovery
+        )
+        if engine_eff > 0 and h2_recovery > 0
         else math.inf
     )
+
+    if target_net_kw <= gross_engine_kw and current_plasma_power_at_specific_sei_kw > 0:
+        required_recovery_offset = (
+            1.0
+            - (
+                (gross_engine_kw - target_net_kw)
+                * generator_eff
+                / current_plasma_power_at_specific_sei_kw
+            )
+        )
+        required_recovery_offset = max(0.0, required_recovery_offset)
+    else:
+        required_recovery_offset = math.inf
+
+    # Same recovered-energy calculation at the thermodynamic-floor plasma input.
+    floor_plasma_power_at_current_gross_kw = (
+        gross_engine_kw
+        * THERMO_MIN_KWH_PER_KG_H2
+        / (
+            engine_eff
+            * H2_LHV_KWH_KG
+            * h2_recovery
+        )
+        if engine_eff > 0 and h2_recovery > 0
+        else math.inf
+    )
+
+    if target_net_kw <= gross_engine_kw and floor_plasma_power_at_current_gross_kw > 0:
+        required_recovery_offset_at_floor = (
+            1.0
+            - (
+                (gross_engine_kw - target_net_kw)
+                * generator_eff
+                / floor_plasma_power_at_current_gross_kw
+            )
+        )
+        required_recovery_offset_at_floor = max(
+            0.0,
+            required_recovery_offset_at_floor,
+        )
+    else:
+        required_recovery_offset_at_floor = math.inf
+
+
+    def fmt_requirement(value, unit="", digits=1):
+        if not math.isfinite(value):
+            return "Not finite"
+        return f"{value:.{digits}f}{unit}"
+
+
+    d1, d2, d3, d4 = st.columns(4)
+
+    d1.metric(
+        "Gross H₂ engine needed @ current SEI",
+        (
+            f"{required_gross_engine_current_sei_kw:.1f} kW"
+            if math.isfinite(required_gross_engine_current_sei_kw)
+            else "Not reachable"
+        ),
+    )
+
+    d2.metric(
+        "Gross H₂ engine needed @ thermo floor",
+        (
+            f"{required_gross_engine_floor_kw:.1f} kW"
+            if math.isfinite(required_gross_engine_floor_kw)
+            else "Not reachable"
+        ),
+    )
+
+    d3.metric(
+        "H₂ engine efficiency needed @ current SEI",
+        (
+            f"{100*required_engine_eff:.1f}%"
+            if math.isfinite(required_engine_eff)
+            else "Not reachable"
+        ),
+    )
+
+    d4.metric(
+        "Recovered-energy offset needed @ current SEI",
+        (
+            f"{100*required_recovery_offset:.1f}%"
+            if math.isfinite(required_recovery_offset)
+            else "Not reachable"
+        ),
+    )
+
+    diagnosis_rows = []
+
+    # Plasma-SEI lever
+    if custom_allowed_sei < THERMO_MIN_KWH_PER_KG_H2:
+        sei_status = "Not physically reachable by SEI reduction alone"
+    else:
+        sei_status = "Not excluded by thermodynamic floor"
+
+    diagnosis_rows.append(
+        {
+            "Design lever": "Plasma specific electricity",
+            "Current": f"{effective_plasma_sei:.2f} kWh/kg H₂",
+            "Required for target": f"≤ {custom_allowed_sei:.2f} kWh/kg H₂",
+            "Model diagnosis": sei_status,
+        }
+    )
+
+    # Gross-engine lever, using current SEI
+    if not math.isfinite(required_gross_engine_current_sei_kw):
+        gross_status = "Not reachable at current specific plasma burden"
+    elif required_gross_engine_current_sei_kw <= 250:
+        gross_status = "Within current simulator power range; throughput must scale too"
+    else:
+        gross_status = "Above current simulator power range"
+
+    diagnosis_rows.append(
+        {
+            "Design lever": "Gross H₂-engine shaft power",
+            "Current": f"{gross_engine_kw:.0f} kW",
+            "Required for target": (
+                f"≥ {required_gross_engine_current_sei_kw:.1f} kW"
+                if math.isfinite(required_gross_engine_current_sei_kw)
+                else "Not finite"
+            ),
+            "Model diagnosis": gross_status,
+        }
+    )
+
+    # Engine-efficiency lever
+    if not math.isfinite(required_engine_eff):
+        engine_eff_status = "Not reachable at current gross power"
+    elif required_engine_eff > 1.0:
+        engine_eff_status = "Physically impossible (>100%)"
+    elif required_engine_eff > 0.50:
+        engine_eff_status = "Above current simulator efficiency range"
+    else:
+        engine_eff_status = "Within current simulator efficiency range"
+
+    diagnosis_rows.append(
+        {
+            "Design lever": "H₂ engine brake efficiency",
+            "Current": f"{100*engine_eff:.1f}%",
+            "Required for target": (
+                f"≥ {100*required_engine_eff:.1f}%"
+                if math.isfinite(required_engine_eff)
+                else "Not finite"
+            ),
+            "Model diagnosis": engine_eff_status,
+        }
+    )
+
+    # Recovery-offset lever
+    if not math.isfinite(required_recovery_offset):
+        recovery_status = "Not reachable"
+    elif required_recovery_offset > 1.0:
+        recovery_status = "Physically impossible (>100%)"
+    elif required_recovery_offset > 0.80:
+        recovery_status = "Above current simulator recovery range"
+    else:
+        recovery_status = "Within model range; requires experimental validation"
+
+    diagnosis_rows.append(
+        {
+            "Design lever": "Recovered-energy offset",
+            "Current": f"{100*recovery_offset:.1f}%",
+            "Required for target": (
+                f"≥ {100*required_recovery_offset:.1f}%"
+                if math.isfinite(required_recovery_offset)
+                else "Not finite"
+            ),
+            "Model diagnosis": recovery_status,
+        }
+    )
+
+    st.dataframe(
+        diagnosis_rows,
+        width="stretch",
+        hide_index=True,
+    )
+
+    # A concise engineering interpretation.
+    if custom_allowed_sei < THERMO_MIN_KWH_PER_KG_H2:
+        st.warning(
+            f"Plasma efficiency alone cannot deliver {target_net_kw:.0f} kW net at "
+            f"{gross_engine_kw:.0f} kW gross: the required "
+            f"{custom_allowed_sei:.2f} kWh/kg H₂ is below the ideal floor of "
+            f"{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂."
+        )
+    else:
+        st.success(
+            f"At {gross_engine_kw:.0f} kW gross, the {target_net_kw:.0f} kW target "
+            f"is not excluded by the thermodynamic floor if plasma electricity can "
+            f"be reduced to ≤ {custom_allowed_sei:.2f} kWh/kg H₂."
+        )
+
     st.markdown(
         f"""
         <div class="horg-note">
-        <b>Pulsed-plasma translation for the selected target:</b><br>
-        At the current pulse energy and frequency, one active cell averages
-        <b>{per_cell_avg_kw:.4f} kW</b> electrical power.
-        To remain below the {target_net_kw:.0f} kW net-power ceiling, the purely
-        electrical model allows approximately <b>{max_cells_for_target} active cells</b>.<br><br>
-        Alternatively, keeping {active_cells} cells and {pulse_frequency_khz:.1f} kHz,
-        the average pulse energy would need to be no more than about
-        <b>{required_pulse_energy_mj_at_current_cells:.2f} mJ per pulse per cell</b>.<br><br>
-        These are electrical ceilings only. They do not establish reactor throughput,
-        conversion, hydrogen yield or carbon-removal performance.
+        <b>Alternative paths for the selected {target_net_kw:.0f} kW target:</b><br><br>
+
+        • Keeping the current plasma specific electricity of
+        <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>, the simplified model requires
+        approximately <b>{fmt_requirement(required_gross_engine_current_sei_kw, " kW", 1)}</b>
+        gross H₂-engine shaft power.<br>
+
+        • If the plasma could approach the ideal thermodynamic floor, the required
+        gross H₂-engine power falls to approximately
+        <b>{fmt_requirement(required_gross_engine_floor_kw, " kW", 1)}</b>.<br>
+
+        • Holding gross engine power and plasma SEI fixed, the required H₂-engine
+        brake efficiency is
+        <b>{fmt_requirement(100*required_engine_eff, "%", 1)}</b>.<br>
+
+        • Holding gross engine power, engine efficiency and plasma SEI fixed, the
+        required recovered-energy offset is
+        <b>{fmt_requirement(100*required_recovery_offset, "%", 1)}</b>.<br><br>
+
+        Each line varies one lever independently. Combining moderate improvements
+        across several levers can be more realistic than forcing any single
+        parameter to an extreme value.
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-
-# ============================================================
-# WHAT MUST CHANGE TO REACH THE SELECTED TARGET?
-# ============================================================
-
-st.subheader("What must change to reach the selected target?")
-
-st.caption(
-    "Design diagnosis: each lever is varied one at a time while the other current "
-    "assumptions are held fixed. These are model requirements, not validated hardware predictions."
-)
-
-def net_fraction_for_specific_plasma_energy(
-    sei_kwh_per_kg_h2,
-    engine_efficiency,
-    recovery_fraction,
-):
-    """
-    Fraction of gross H2-engine shaft power left after the modeled plasma
-    electrical burden, assuming plasma specific electricity scales with H2 flow.
-    """
-    if (
-        engine_efficiency <= 0
-        or h2_recovery <= 0
-        or generator_eff <= 0
-    ):
-        return -math.inf
-
-    plasma_burden_fraction = (
-        sei_kwh_per_kg_h2
-        * (1.0 - recovery_fraction)
-        / (
-            generator_eff
-            * engine_efficiency
-            * H2_LHV_KWH_KG
-            * h2_recovery
-        )
-    )
-    return 1.0 - plasma_burden_fraction
-
-
-# 1) Gross engine power required if current plasma specific electricity is kept.
-current_specific_net_fraction = net_fraction_for_specific_plasma_energy(
-    effective_plasma_sei,
-    engine_eff,
-    recovery_offset,
-)
-
-required_gross_engine_current_sei_kw = (
-    target_net_kw / current_specific_net_fraction
-    if target_net_kw > 0 and current_specific_net_fraction > 0
-    else (0.0 if target_net_kw == 0 else math.inf)
-)
-
-# 2) Gross engine power required in the ideal thermodynamic-floor case.
-floor_specific_net_fraction = net_fraction_for_specific_plasma_energy(
-    THERMO_MIN_KWH_PER_KG_H2,
-    engine_eff,
-    recovery_offset,
-)
-
-required_gross_engine_floor_kw = (
-    target_net_kw / floor_specific_net_fraction
-    if target_net_kw > 0 and floor_specific_net_fraction > 0
-    else (0.0 if target_net_kw == 0 else math.inf)
-)
-
-# 3) H2 engine efficiency required at current gross engine power and current plasma SEI.
-if target_net_kw < gross_engine_kw:
-    required_engine_eff = (
-        gross_engine_kw
-        * effective_plasma_sei
-        * (1.0 - recovery_offset)
-        / (
-            (gross_engine_kw - target_net_kw)
-            * H2_LHV_KWH_KG
-            * h2_recovery
-            * generator_eff
-        )
-    )
-elif (
-    target_net_kw == gross_engine_kw
-    and effective_plasma_sei == 0
-):
-    required_engine_eff = engine_eff
-else:
-    required_engine_eff = math.inf
-
-# Same calculation if the plasma could reach the ideal thermodynamic floor.
-if target_net_kw < gross_engine_kw:
-    required_engine_eff_at_floor = (
-        gross_engine_kw
-        * THERMO_MIN_KWH_PER_KG_H2
-        * (1.0 - recovery_offset)
-        / (
-            (gross_engine_kw - target_net_kw)
-            * H2_LHV_KWH_KG
-            * h2_recovery
-            * generator_eff
-        )
-    )
-else:
-    required_engine_eff_at_floor = math.inf
-
-# 4) Recovered-energy offset required at current gross engine power and current plasma SEI.
-current_plasma_power_at_specific_sei_kw = (
-    gross_engine_kw
-    * effective_plasma_sei
-    / (
-        engine_eff
-        * H2_LHV_KWH_KG
-        * h2_recovery
-    )
-    if engine_eff > 0 and h2_recovery > 0
-    else math.inf
-)
-
-if target_net_kw <= gross_engine_kw and current_plasma_power_at_specific_sei_kw > 0:
-    required_recovery_offset = (
-        1.0
-        - (
-            (gross_engine_kw - target_net_kw)
-            * generator_eff
-            / current_plasma_power_at_specific_sei_kw
-        )
-    )
-    required_recovery_offset = max(0.0, required_recovery_offset)
-else:
-    required_recovery_offset = math.inf
-
-# Same recovered-energy calculation at the thermodynamic-floor plasma input.
-floor_plasma_power_at_current_gross_kw = (
-    gross_engine_kw
-    * THERMO_MIN_KWH_PER_KG_H2
-    / (
-        engine_eff
-        * H2_LHV_KWH_KG
-        * h2_recovery
-    )
-    if engine_eff > 0 and h2_recovery > 0
-    else math.inf
-)
-
-if target_net_kw <= gross_engine_kw and floor_plasma_power_at_current_gross_kw > 0:
-    required_recovery_offset_at_floor = (
-        1.0
-        - (
-            (gross_engine_kw - target_net_kw)
-            * generator_eff
-            / floor_plasma_power_at_current_gross_kw
-        )
-    )
-    required_recovery_offset_at_floor = max(
-        0.0,
-        required_recovery_offset_at_floor,
-    )
-else:
-    required_recovery_offset_at_floor = math.inf
-
-
-def fmt_requirement(value, unit="", digits=1):
-    if not math.isfinite(value):
-        return "Not finite"
-    return f"{value:.{digits}f}{unit}"
-
-
-d1, d2, d3, d4 = st.columns(4)
-
-d1.metric(
-    "Gross H₂ engine needed @ current SEI",
-    (
-        f"{required_gross_engine_current_sei_kw:.1f} kW"
-        if math.isfinite(required_gross_engine_current_sei_kw)
-        else "Not reachable"
-    ),
-)
-
-d2.metric(
-    "Gross H₂ engine needed @ thermo floor",
-    (
-        f"{required_gross_engine_floor_kw:.1f} kW"
-        if math.isfinite(required_gross_engine_floor_kw)
-        else "Not reachable"
-    ),
-)
-
-d3.metric(
-    "H₂ engine efficiency needed @ current SEI",
-    (
-        f"{100*required_engine_eff:.1f}%"
-        if math.isfinite(required_engine_eff)
-        else "Not reachable"
-    ),
-)
-
-d4.metric(
-    "Recovered-energy offset needed @ current SEI",
-    (
-        f"{100*required_recovery_offset:.1f}%"
-        if math.isfinite(required_recovery_offset)
-        else "Not reachable"
-    ),
-)
-
-diagnosis_rows = []
-
-# Plasma-SEI lever
-if custom_allowed_sei < THERMO_MIN_KWH_PER_KG_H2:
-    sei_status = "Not physically reachable by SEI reduction alone"
-else:
-    sei_status = "Not excluded by thermodynamic floor"
-
-diagnosis_rows.append(
-    {
-        "Design lever": "Plasma specific electricity",
-        "Current": f"{effective_plasma_sei:.2f} kWh/kg H₂",
-        "Required for target": f"≤ {custom_allowed_sei:.2f} kWh/kg H₂",
-        "Model diagnosis": sei_status,
-    }
-)
-
-# Gross-engine lever, using current SEI
-if not math.isfinite(required_gross_engine_current_sei_kw):
-    gross_status = "Not reachable at current specific plasma burden"
-elif required_gross_engine_current_sei_kw <= 250:
-    gross_status = "Within current simulator power range; throughput must scale too"
-else:
-    gross_status = "Above current simulator power range"
-
-diagnosis_rows.append(
-    {
-        "Design lever": "Gross H₂-engine shaft power",
-        "Current": f"{gross_engine_kw:.0f} kW",
-        "Required for target": (
-            f"≥ {required_gross_engine_current_sei_kw:.1f} kW"
-            if math.isfinite(required_gross_engine_current_sei_kw)
+    with st.expander("Ideal-floor cross-check for the selected target"):
+        gross_floor_display = (
+            f"{required_gross_engine_floor_kw:.1f} kW"
+            if math.isfinite(required_gross_engine_floor_kw)
             else "Not finite"
-        ),
-        "Model diagnosis": gross_status,
-    }
-)
+        )
 
-# Engine-efficiency lever
-if not math.isfinite(required_engine_eff):
-    engine_eff_status = "Not reachable at current gross power"
-elif required_engine_eff > 1.0:
-    engine_eff_status = "Physically impossible (>100%)"
-elif required_engine_eff > 0.50:
-    engine_eff_status = "Above current simulator efficiency range"
-else:
-    engine_eff_status = "Within current simulator efficiency range"
-
-diagnosis_rows.append(
-    {
-        "Design lever": "H₂ engine brake efficiency",
-        "Current": f"{100*engine_eff:.1f}%",
-        "Required for target": (
-            f"≥ {100*required_engine_eff:.1f}%"
-            if math.isfinite(required_engine_eff)
+        engine_eff_floor_display = (
+            f"{100 * required_engine_eff_at_floor:.1f}%"
+            if math.isfinite(required_engine_eff_at_floor)
             else "Not finite"
-        ),
-        "Model diagnosis": engine_eff_status,
-    }
-)
+        )
 
-# Recovery-offset lever
-if not math.isfinite(required_recovery_offset):
-    recovery_status = "Not reachable"
-elif required_recovery_offset > 1.0:
-    recovery_status = "Physically impossible (>100%)"
-elif required_recovery_offset > 0.80:
-    recovery_status = "Above current simulator recovery range"
-else:
-    recovery_status = "Within model range; requires experimental validation"
-
-diagnosis_rows.append(
-    {
-        "Design lever": "Recovered-energy offset",
-        "Current": f"{100*recovery_offset:.1f}%",
-        "Required for target": (
-            f"≥ {100*required_recovery_offset:.1f}%"
-            if math.isfinite(required_recovery_offset)
+        recovery_floor_display = (
+            f"{100 * required_recovery_offset_at_floor:.1f}%"
+            if math.isfinite(required_recovery_offset_at_floor)
             else "Not finite"
-        ),
-        "Model diagnosis": recovery_status,
-    }
-)
+        )
 
-st.dataframe(
-    diagnosis_rows,
-    width="stretch",
-    hide_index=True,
-)
+        st.markdown(
+            f"""
+            If the plasma specific electricity were exactly the ideal
+            **{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂** floor:
 
-# A concise engineering interpretation.
-if custom_allowed_sei < THERMO_MIN_KWH_PER_KG_H2:
-    st.warning(
-        f"Plasma efficiency alone cannot deliver {target_net_kw:.0f} kW net at "
-        f"{gross_engine_kw:.0f} kW gross: the required "
-        f"{custom_allowed_sei:.2f} kWh/kg H₂ is below the ideal floor of "
-        f"{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂."
-    )
-else:
-    st.success(
-        f"At {gross_engine_kw:.0f} kW gross, the {target_net_kw:.0f} kW target "
-        f"is not excluded by the thermodynamic floor if plasma electricity can "
-        f"be reduced to ≤ {custom_allowed_sei:.2f} kWh/kg H₂."
-    )
+            - gross H₂-engine power needed: **{gross_floor_display}**
+            - H₂-engine efficiency needed at the current gross power:
+              **{engine_eff_floor_display}**
+            - recovered-energy offset needed at the current gross power:
+              **{recovery_floor_display}**
 
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Alternative paths for the selected {target_net_kw:.0f} kW target:</b><br><br>
+            These are idealized model boundaries, not predictions of achievable
+            reactor, engine or heat-recovery hardware.
+            """
+        )
 
-    • Keeping the current plasma specific electricity of
-    <b>{effective_plasma_sei:.2f} kWh/kg H₂</b>, the simplified model requires
-    approximately <b>{fmt_requirement(required_gross_engine_current_sei_kw, " kW", 1)}</b>
-    gross H₂-engine shaft power.<br>
 
-    • If the plasma could approach the ideal thermodynamic floor, the required
-    gross H₂-engine power falls to approximately
-    <b>{fmt_requirement(required_gross_engine_floor_kw, " kW", 1)}</b>.<br>
+    st.subheader("Hypothesis 3 — Gasoline + Water / Steam-Assisted Comparison")
 
-    • Holding gross engine power and plasma SEI fixed, the required H₂-engine
-    brake efficiency is
-    <b>{fmt_requirement(100*required_engine_eff, "%", 1)}</b>.<br>
-
-    • Holding gross engine power, engine efficiency and plasma SEI fixed, the
-    required recovered-energy offset is
-    <b>{fmt_requirement(100*required_recovery_offset, "%", 1)}</b>.<br><br>
-
-    Each line varies one lever independently. Combining moderate improvements
-    across several levers can be more realistic than forcing any single
-    parameter to an extreme value.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-with st.expander("Ideal-floor cross-check for the selected target"):
-    gross_floor_display = (
-        f"{required_gross_engine_floor_kw:.1f} kW"
-        if math.isfinite(required_gross_engine_floor_kw)
-        else "Not finite"
+    st.caption(
+        "Water and gasoline are modeled as separate feeds mixed after vaporization. "
+        "The water does not remain a liquid blend in the gasoline tank."
     )
 
-    engine_eff_floor_display = (
-        f"{100 * required_engine_eff_at_floor:.1f}%"
-        if math.isfinite(required_engine_eff_at_floor)
-        else "Not finite"
+    s1, s2, s3, s4 = st.columns(4)
+
+    s1.metric(
+        "Steam-route gasoline",
+        f"{steam_fuel_l_h:.1f} L/h",
+        f"{steam_fuel_kg_h:.1f} kg/h",
     )
 
-    recovery_floor_display = (
-        f"{100 * required_recovery_offset_at_floor:.1f}%"
-        if math.isfinite(required_recovery_offset_at_floor)
-        else "Not finite"
+    s2.metric(
+        "Make-up water",
+        f"{steam_water_makeup_l_h:.1f} L/h",
     )
 
-    st.markdown(
-        f"""
-        If the plasma specific electricity were exactly the ideal
-        **{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂** floor:
-
-        - gross H₂-engine power needed: **{gross_floor_display}**
-        - H₂-engine efficiency needed at the current gross power:
-          **{engine_eff_floor_display}**
-        - recovered-energy offset needed at the current gross power:
-          **{recovery_floor_display}**
-
-        These are idealized model boundaries, not predictions of achievable
-        reactor, engine or heat-recovery hardware.
-        """
+    s3.metric(
+        "H₂ to engine",
+        f"{steam_h2_to_engine_kg_h:.2f} kg/h",
     )
 
-
-st.subheader("Hypothesis 3 — Gasoline + Water / Steam-Assisted Comparison")
-
-st.caption(
-    "Water and gasoline are modeled as separate feeds mixed after vaporization. "
-    "The water does not remain a liquid blend in the gasoline tank."
-)
-
-s1, s2, s3, s4 = st.columns(4)
-
-s1.metric(
-    "Steam-route gasoline",
-    f"{steam_fuel_l_h:.1f} L/h",
-    f"{steam_fuel_kg_h:.1f} kg/h",
-)
-
-s2.metric(
-    "Make-up water",
-    f"{steam_water_makeup_l_h:.1f} L/h",
-)
-
-s3.metric(
-    "H₂ to engine",
-    f"{steam_h2_to_engine_kg_h:.2f} kg/h",
-)
-
-s4.metric(
-    "Steam-route net shaft",
-    f"{steam_net_shaft_kw:.1f} kW",
-)
-
-s5, s6, s7, s8 = st.columns(4)
-
-s5.metric(
-    "Ideal H₂ yield from fuel",
-    f"{steam_h2_yield_kg_per_kg_fuel:.3f} kg/kg",
-)
-
-s6.metric(
-    "Thermal process demand",
-    f"{steam_thermal_energy:.1f} kWh_th/kg H₂",
-)
-
-s7.metric(
-    "Reaction-enthalpy reference",
-    f"{steam_reaction_floor_kwh_per_kg_h2:.2f} kWh/kg H₂",
-)
-
-if steam_route == "Steam reforming + WGS":
-    s8.metric(
-        "CO₂ produced in route",
-        f"{steam_co2_kg_h:.1f} kg/h",
-    )
-else:
-    s8.metric(
-        "CO produced in syngas",
-        f"{steam_co_kg_h:.1f} kg/h",
+    s4.metric(
+        "Steam-route net shaft",
+        f"{steam_net_shaft_kw:.1f} kW",
     )
 
-se1, se2, se3 = st.columns(3)
-se1.metric("Electrical auxiliaries", f"{steam_electrical_aux:.2f} kWh_e/kg H₂")
-se2.metric("External thermal demand", f"{steam_thermal_external_kw:.1f} kW_th")
-se3.metric("Electrical auxiliary demand", f"{steam_electrical_aux_kw:.1f} kW_e")
+    s5, s6, s7, s8 = st.columns(4)
 
-st.dataframe(
-    {
-        "Metric": [
-            "Gross H₂-engine shaft",
-            "Net shaft after process burden",
-            "Gasoline flow",
-            "Make-up water",
-            "H₂ to engine",
-            "Fuel-to-net-shaft efficiency",
-            "Carbon pathway",
-        ],
-        "Conventional gasoline ICE": [
-            f"{gross_engine_kw:.1f} kW",
-            f"{gross_engine_kw:.1f} kW",
-            f"{conv_same_gross_fuel_l_h:.2f} L/h",
-            "0 L/h",
-            "0 kg/h",
-            f"{100*conventional_eff:.1f}%",
-            f"{conv_same_gross_co2_kg_h:.2f} kg/h CO₂",
-        ],
-        "Dry HPRS carbon-retention": [
-            f"{gross_engine_kw:.1f} kW",
-            f"{net_shaft_kw:.1f} kW",
-            f"{fuel_l_h:.2f} L/h",
-            "0 L/h",
-            f"{h2_to_engine_kg_h:.2f} kg/h",
-            f"{100*hprs_net_eff:.1f}%",
-            f"{carbon_captured_kg_h:.2f} kg/h solid C captured",
-        ],
-        "Gasoline + steam route": [
-            f"{gross_engine_kw:.1f} kW",
-            f"{steam_net_shaft_kw:.1f} kW",
-            f"{steam_fuel_l_h:.2f} L/h",
-            f"{steam_water_makeup_l_h:.2f} L/h",
-            f"{steam_h2_to_engine_kg_h:.2f} kg/h",
-            f"{100*steam_net_eff:.1f}%",
-            (
-                f"{steam_co2_kg_h:.2f} kg/h CO₂"
-                if steam_route == "Steam reforming + WGS"
-                else f"{steam_co_kg_h:.2f} kg/h CO in syngas"
-            ),
-        ],
-    },
-    width="stretch",
-    hide_index=True,
-)
+    s5.metric(
+        "Ideal H₂ yield from fuel",
+        f"{steam_h2_yield_kg_per_kg_fuel:.3f} kg/kg",
+    )
+
+    s6.metric(
+        "Thermal process demand",
+        f"{steam_thermal_energy:.1f} kWh_th/kg H₂",
+    )
+
+    s7.metric(
+        "Reaction-enthalpy reference",
+        f"{steam_reaction_floor_kwh_per_kg_h2:.2f} kWh/kg H₂",
+    )
+
+    if steam_route == "Steam reforming + WGS":
+        s8.metric(
+            "CO₂ produced in route",
+            f"{steam_co2_kg_h:.1f} kg/h",
+        )
+    else:
+        s8.metric(
+            "CO produced in syngas",
+            f"{steam_co_kg_h:.1f} kg/h",
+        )
+
+    se1, se2, se3 = st.columns(3)
+    se1.metric("Electrical auxiliaries", f"{steam_electrical_aux:.2f} kWh_e/kg H₂")
+    se2.metric("External thermal demand", f"{steam_thermal_external_kw:.1f} kW_th")
+    se3.metric("Electrical auxiliary demand", f"{steam_electrical_aux_kw:.1f} kW_e")
+
+    st.dataframe(
+        {
+            "Metric": [
+                "Gross H₂-engine shaft",
+                "Net shaft after process burden",
+                "Gasoline flow",
+                "Make-up water",
+                "H₂ to engine",
+                "Fuel-to-net-shaft efficiency",
+                "Carbon pathway",
+            ],
+            "Conventional gasoline ICE": [
+                f"{gross_engine_kw:.1f} kW",
+                f"{gross_engine_kw:.1f} kW",
+                f"{conv_same_gross_fuel_l_h:.2f} L/h",
+                "0 L/h",
+                "0 kg/h",
+                f"{100*conventional_eff:.1f}%",
+                f"{conv_same_gross_co2_kg_h:.2f} kg/h CO₂",
+            ],
+            "Dry HPRS carbon-retention": [
+                f"{gross_engine_kw:.1f} kW",
+                f"{net_shaft_kw:.1f} kW",
+                f"{fuel_l_h:.2f} L/h",
+                "0 L/h",
+                f"{h2_to_engine_kg_h:.2f} kg/h",
+                f"{100*hprs_net_eff:.1f}%",
+                f"{carbon_captured_kg_h:.2f} kg/h solid C captured",
+            ],
+            "Gasoline + steam route": [
+                f"{gross_engine_kw:.1f} kW",
+                f"{steam_net_shaft_kw:.1f} kW",
+                f"{steam_fuel_l_h:.2f} L/h",
+                f"{steam_water_makeup_l_h:.2f} L/h",
+                f"{steam_h2_to_engine_kg_h:.2f} kg/h",
+                f"{100*steam_net_eff:.1f}%",
+                (
+                    f"{steam_co2_kg_h:.2f} kg/h CO₂"
+                    if steam_route == "Steam reforming + WGS"
+                    else f"{steam_co_kg_h:.2f} kg/h CO in syngas"
+                ),
+            ],
+        },
+        width="stretch",
+        hide_index=True,
+    )
+
 
 st.subheader("Hypothesis 4 — HPRS-W Plasma Water Splitting")
 
@@ -3510,408 +3543,560 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.subheader("V3.3 Advanced Theoretical Analysis — HPRS-W")
-st.caption(
-    "These diagnostics are first-order theoretical calculations. They do not solve plasma kinetics, "
-    "non-equilibrium chemistry, sheath physics, detailed CFD or electrode erosion."
-)
-
-st.markdown("#### 1 · Standard-state thermodynamic limits")
-t1, t2, t3, t4 = st.columns(4)
-t1.metric("Reversible minimum ΔG", f"{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H₂")
-t2.metric("Thermoneutral ΔH", f"{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H₂")
-t3.metric("Reversible voltage", f"{WATER_SPLIT_REV_VOLTAGE_V:.3f} V")
-t4.metric("Thermoneutral voltage", f"{WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V:.3f} V")
-
-t5, t6, t7, t8 = st.columns(4)
-t5.metric(
-    "Actual external energy / delivered H₂",
-    f"{hprsw_total_external_energy_per_delivered_h2:.1f} kWh/kg",
-)
-t6.metric(
-    "External exergy / delivered H₂",
-    f"{hprsw_external_exergy_per_delivered_h2:.1f} kWhₑₓ/kg",
-)
-t7.metric("Second-law efficiency proxy", f"{100*hprsw_second_law_eff:.1f}%")
-t8.metric("HHV energy-efficiency proxy", f"{100*hprsw_hhv_energy_eff:.1f}%")
-
-if hprsw_standard_energy_margin_gross < 0:
-    st.error(
-        f"Thermodynamic closure warning: the modeled external electricity + unrecovered heat "
-        f"is {abs(hprsw_standard_energy_margin_gross):.2f} kWh/kg gross H₂ below the 298 K "
-        f"standard-state ΔH reference. The scenario therefore requires an unmodeled energy source "
-        f"or a different thermodynamic boundary."
-    )
-elif hprsw_standard_exergy_margin_gross < 0:
-    st.error(
-        f"Exergy closure warning: the modeled external exergy is "
-        f"{abs(hprsw_standard_exergy_margin_gross):.2f} kWh/kg gross H₂ below the standard-state ΔG reference."
-    )
-else:
-    st.success(
-        f"Standard-state closure check is non-negative: energy margin "
-        f"{hprsw_standard_energy_margin_gross:+.2f} kWh/kg gross H₂ and simple exergy margin "
-        f"{hprsw_standard_exergy_margin_gross:+.2f} kWh/kg gross H₂."
+st.markdown("---")
+with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", expanded=False):
+    st.subheader("V3.3 Advanced Theoretical Analysis — HPRS-W")
+    st.caption(
+        "These diagnostics are first-order theoretical calculations. They do not solve plasma kinetics, "
+        "non-equilibrium chemistry, sheath physics, detailed CFD or electrode erosion."
     )
 
-st.markdown("#### 2 · Electric-field and reduced-field diagnostic")
-e1, e2, e3, e4 = st.columns(4)
-e1.metric("Electric field E", f"{hprsw_field_v_cm:.1f} V/cm")
-e2.metric("Gas number density N", f"{hprsw_number_density_m3:.2e} m⁻³")
-e3.metric("Reduced field E/N", f"{hprsw_reduced_field_td:.2f} Td")
-e4.metric("Ion drift velocity", f"{hprsw_ion_drift_velocity_m_s:.2f} m/s")
+    st.markdown("#### 1 · Standard-state thermodynamic limits")
+    t1, t2, t3, t4 = st.columns(4)
+    t1.metric("Reversible minimum ΔG", f"{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H₂")
+    t2.metric("Thermoneutral ΔH", f"{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H₂")
+    t3.metric("Reversible voltage", f"{WATER_SPLIT_REV_VOLTAGE_V:.3f} V")
+    t4.metric("Thermoneutral voltage", f"{WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V:.3f} V")
 
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>E/N interpretation:</b> E/N is calculated from the user-selected bulk field,
-    ideal-gas number density and separation-zone state. Local sheath fields, non-uniform
-    plasma fields, electron-energy distributions and species-specific transport are not solved.
-    The current input corresponds to <b>{hprsw_field_voltage_v:.0f} V</b> across
-    <b>{hprsw_electrode_gap_mm:.1f} mm</b> at <b>{hprsw_pressure_bar:.2f} bar</b> and
-    <b>{hprsw_separation_temp_c:.0f} °C</b>.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown("#### 3 · Ion-separation and quench timescales")
-q1, q2, q3, q4 = st.columns(4)
-q1.metric(
-    "Ion separation time",
-    f"{1000*hprsw_ion_separation_time_s:.2f} ms" if math.isfinite(hprsw_ion_separation_time_s) else "∞",
-)
-q2.metric("Residence / separation", f"{hprsw_separation_timescale_index:.2f}×")
-q3.metric("Quench cooling rate", f"{hprsw_quench_cooling_rate_k_s:.2e} K/s")
-q4.metric("Timescale H₂ survival", f"{100*hprsw_quench_survival_timescale:.1f}%")
-
-if hprsw_separation_timescale_index < 1.0:
-    st.warning(
-        f"Ion-steering diagnostic: with the selected effective mobility, the charged-species residence "
-        f"time is shorter than the estimated drift time across {hprsw_separation_distance_mm:.1f} mm. "
-        f"The simple separation index is {hprsw_separation_timescale_index:.2f}×."
+    t5, t6, t7, t8 = st.columns(4)
+    t5.metric(
+        "Actual external energy / delivered H₂",
+        f"{hprsw_total_external_energy_per_delivered_h2:.1f} kWh/kg",
     )
-else:
-    st.success(
-        f"Ion-steering timescale is favorable in the simple drift model: the residence time is "
-        f"{hprsw_separation_timescale_index:.2f}× the calculated separation time. This is not a purity prediction."
+    t6.metric(
+        "External exergy / delivered H₂",
+        f"{hprsw_external_exergy_per_delivered_h2:.1f} kWhₑₓ/kg",
     )
+    t7.metric("Second-law efficiency proxy", f"{100*hprsw_second_law_eff:.1f}%")
+    t8.metric("HHV energy-efficiency proxy", f"{100*hprsw_hhv_energy_eff:.1f}%")
 
-st.caption(
-    f"Quench model used in the mass balance: {hprsw_quench_loss_model}. "
-    f"Effective H₂ quench/recombination loss = {100*hprsw_quench_loss_effective:.2f}%. "
-    f"The first-order diagnostic uses τ_recomb = {hprsw_recomb_tau_ms:.1f} ms and "
-    f"t_quench = {hprsw_quench_time_ms:.2f} ms."
-)
-
-st.markdown("#### 4 · First-order reactor sizing at the normalized power point")
-r1a, r2a, r3a, r4a = st.columns(4)
-r1a.metric("Estimated active gas volume", f"{hprsw_active_volume_l:.2f} L")
-r2a.metric("Equivalent core diameter", f"{1000*hprsw_core_diameter_m:.0f} mm")
-r3a.metric("Equivalent core length", f"{1000*hprsw_core_length_m:.0f} mm")
-r4a.metric("Core power-density proxy", f"{hprsw_power_density_kw_l:.2f} kW/L")
-
-r5a, r6a, r7a, r8a = st.columns(4)
-r5a.metric("Steam circulation", f"{norm_hprsw_water_circulation_kg_h:.1f} kg/h")
-r6a.metric("Argon circulation", f"{hprsw_norm_argon_circulation_kg_h:.2f} kg/h")
-r7a.metric("Sensible quench duty", f"{hprsw_quench_sensible_duty_kw:.1f} kW")
-r8a.metric("Coolant flow proxy", f"{hprsw_coolant_flow_l_min:.1f} L/min")
-
-st.markdown(
-    """
-    <div class="horg-note">
-    <b>Sizing boundary:</b> active volume is inferred from ideal-gas volumetric flow × selected residence time.
-    The equivalent diameter/length assumes a simple cylindrical core. The quench duty uses a lumped constant Cp;
-    dissociation energy, radiative transfer, wall heat flux, electrode cooling and two-phase quench behavior are not solved.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown("#### 5 · Automatic HPRS-W break-even solver vs conventional gasoline")
-
-be1, be2, be3, be4 = st.columns(4)
-be1.metric(
-    "Max plasma electricity for energy parity",
-    f"{hprsw_max_plasma_kwhkg_energy_parity:.1f} kWh/kg H₂"
-    if hprsw_max_plasma_kwhkg_energy_parity >= 0 else "Impossible at current heat load",
-)
-be2.metric(
-    "Required total H₂ recovery chain",
-    f"{100*hprsw_required_recovery_chain_energy_parity:.1f}%",
-)
-be3.metric(
-    "Required H₂-engine efficiency",
-    f"{100*hprsw_required_engine_eff_energy_parity:.1f}%",
-)
-
-if hprsw_required_heat_recovery_energy_parity <= 0:
-    heat_req_text = "0%"
-elif hprsw_required_heat_recovery_energy_parity <= 1:
-    heat_req_text = f"{100*hprsw_required_heat_recovery_energy_parity:.1f}%"
-else:
-    heat_req_text = ">100% (impossible)"
-be4.metric("Required heat recovery", heat_req_text)
-
-if hprsw_energy_parity_thermoneutral_margin < 0:
-    st.error(
-        f"Fundamental parity warning: at the current H2-engine efficiency and H2 recovery chain, "
-        f"the total gross energy ceiling required to equal the conventional {100*conventional_eff:.0f}% "
-        f"efficiency is {hprsw_allowed_total_gross_for_energy_parity:.2f} kWh/kg gross H2, which is "
-        f"{abs(hprsw_energy_parity_thermoneutral_margin):.2f} kWh/kg below the 298 K thermoneutral "
-        f"water-splitting reference. Energy parity is therefore not thermodynamically closed until "
-        f"engine efficiency and/or the H2 recovery chain improve."
-    )
-else:
-    st.success(
-        f"The energy-parity ceiling is {hprsw_energy_parity_thermoneutral_margin:.2f} kWh/kg above "
-        f"the 298 K thermoneutral reference before detailed reactor losses."
-    )
-
-bc1, bc2, bc3, bc4 = st.columns(4)
-bc1.metric(
-    "Max plasma electricity for cost parity",
-    (
-        f"{hprsw_max_plasma_kwhkg_cost_parity:.1f} kWh/kg H₂"
-        if math.isfinite(hprsw_max_plasma_kwhkg_cost_parity)
-        else "No electricity-price limit"
-    ),
-)
-bc2.metric(
-    "Break-even electricity price",
-    f"CHF {hprsw_break_even_electricity_price_chf_kwh:.3f}/kWh"
-    if math.isfinite(hprsw_break_even_electricity_price_chf_kwh)
-    else "—",
-)
-bc3.metric("Current electricity price", f"CHF {electricity_price_chf_kwh:.3f}/kWh")
-bc4.metric("Conventional cost benchmark", f"CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net")
-
-energy_parity_possible = (
-    hprsw_max_plasma_kwhkg_energy_parity >= 0
-    and hprsw_required_recovery_chain_energy_parity <= 1.0
-    and hprsw_required_engine_eff_energy_parity <= 1.0
-    and hprsw_required_heat_recovery_energy_parity <= 1.0
-)
-cost_parity_possible = (
-    hprsw_max_plasma_kwhkg_cost_parity >= 0
-    if math.isfinite(hprsw_max_plasma_kwhkg_cost_parity)
-    else True
-)
-
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Break-even interpretation:</b><br>
-    Energy-parity feasibility under the current one-at-a-time algebra: <b>{'mathematically reachable' if energy_parity_possible else 'not reachable without changing multiple assumptions'}</b>.<br>
-    Cost-parity feasibility before capital cost, maintenance and lifecycle effects: <b>{'mathematically reachable' if cost_parity_possible else 'not reachable at the present non-electric operating costs'}</b>.<br><br>
-    The solver compares HPRS-W total external energy to the selected conventional gasoline brake efficiency.
-    It is a screening calculation, not an optimized reactor design.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.markdown("#### 6 · V3.3 multi-parameter feasible region")
-
-st.caption(
-    "The grid below changes plasma electricity, total H2 recovery, H2-engine efficiency "
-    "and HPRS-W heat recovery simultaneously. Grid shares are deterministic search fractions, "
-    "not probabilities of experimental success."
-)
-
-fg1, fg2, fg3, fg4 = st.columns(4)
-fg1.metric("Grid points scanned", f"{v29_total_grid_points:,}")
-fg2.metric(
-    "Thermodynamically feasible",
-    f"{v29_thermo_count:,} ({100*v29_thermo_share:.1f}%)",
-)
-fg3.metric(
-    "Energy-competitive",
-    f"{v29_energy_competitive_count:,}",
-    help=(
-        f"Thermodynamically feasible grid points with total-energy-to-shaft efficiency "
-        f"at least the selected conventional benchmark ({100*conventional_eff:.1f}%)."
-    ),
-)
-fg4.metric(
-    "Energy + cost competitive",
-    f"{v29_dual_competitive_count:,}",
-    help="Points that satisfy both the energy benchmark and the current modeled operating-cost benchmark.",
-)
-
-current_status_parts = [
-    "thermodynamically feasible" if v29_current_thermo_ok else "thermodynamically rejected",
-    "energy-competitive" if v29_current_energy_competitive else "below energy benchmark",
-    "cost-competitive" if v29_current_cost_competitive else "above cost benchmark",
-]
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Current selected HPRS-W point:</b> {', '.join(current_status_parts)}.<br>
-    Current screened total-energy-to-shaft efficiency = <b>{100*v29_current_system_eff:.1f}%</b>;
-    conventional benchmark = <b>{100*conventional_eff:.1f}%</b>.<br><br>
-    <b>Thermodynamic guards used by V3.3:</b>
-    total external energy must be at least <b>{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H2</b>
-    and modeled external exergy must be at least <b>{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H2</b>.
-    The heat-exergy contribution uses the selected heat-source temperature through a simple Carnot factor.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-if v29_energy_competitive_points:
-    _ep = v29_energy_competitive_points
-    _p_min, _p_max = min(x["plasma"] for x in _ep), max(x["plasma"] for x in _ep)
-    _r_min, _r_max = min(x["recovery"] for x in _ep), max(x["recovery"] for x in _ep)
-    _e_min, _e_max = min(x["engine_eff"] for x in _ep), max(x["engine_eff"] for x in _ep)
-    _h_min, _h_max = min(x["heat_recovery"] for x in _ep), max(x["heat_recovery"] for x in _ep)
-
-    st.markdown("##### Coupled energy-competitive envelope")
-    ce1, ce2, ce3, ce4 = st.columns(4)
-    ce1.metric("Plasma electricity in competitive set", f"{_p_min:.1f}–{_p_max:.1f} kWh/kg H2")
-    ce2.metric("Total H2 recovery in competitive set", f"{100*_r_min:.1f}–{100*_r_max:.1f}%")
-    ce3.metric("H2-engine BTE in competitive set", f"{100*_e_min:.1f}–{100*_e_max:.1f}%")
-    ce4.metric("Heat recovery in competitive set", f"{100*_h_min:.1f}–{100*_h_max:.1f}%")
-
-    st.info(
-        "This is a coupled envelope: the displayed minima and maxima do not form one single operating point. "
-        "Each value occurs somewhere in a competitive combination with compensating values of the other variables."
-    )
-
-    def _v29_candidate_row(label, p):
-        return {
-            "Candidate": label,
-            "Plasma kWh/kg H2": f"{p['plasma']:.1f}",
-            "H2 recovery": f"{100*p['recovery']:.1f}%",
-            "Engine BTE": f"{100*p['engine_eff']:.1f}%",
-            "Heat recovery": f"{100*p['heat_recovery']:.1f}%",
-            "External heat kWh/kg": f"{p['external_heat']:.2f}",
-            "Total energy kWh/kg": f"{p['total_energy']:.2f}",
-            "System efficiency": f"{100*p['system_eff']:.1f}%",
-            "Modeled cost CHF/kWh net": f"{p['cost_per_net_kwh']:.3f}",
-        }
-
-    _candidate_rows = []
-    _seen_candidates = set()
-    for _label, _candidate in [
-        ("Balanced stretch from current point", v29_balanced_energy_candidate),
-        ("Lowest total external energy", v29_lowest_energy_candidate),
-        ("Lowest cost with energy + cost parity", v29_lowest_cost_dual_candidate),
-    ]:
-        if _candidate is None:
-            continue
-        _key = (
-            round(_candidate["plasma"], 8),
-            round(_candidate["recovery"], 8),
-            round(_candidate["engine_eff"], 8),
-            round(_candidate["heat_recovery"], 8),
+    if hprsw_standard_energy_margin_gross < 0:
+        st.error(
+            f"Thermodynamic closure warning: the modeled external electricity + unrecovered heat "
+            f"is {abs(hprsw_standard_energy_margin_gross):.2f} kWh/kg gross H₂ below the 298 K "
+            f"standard-state ΔH reference. The scenario therefore requires an unmodeled energy source "
+            f"or a different thermodynamic boundary."
         )
-        if _key not in _seen_candidates:
-            _seen_candidates.add(_key)
-            _candidate_rows.append(_v29_candidate_row(_label, _candidate))
-
-    st.markdown("##### Representative feasible candidates")
-    st.table(_candidate_rows)
-
-    if v29_balanced_energy_candidate is not None:
-        _b = v29_balanced_energy_candidate
+    elif hprsw_standard_exergy_margin_gross < 0:
+        st.error(
+            f"Exergy closure warning: the modeled external exergy is "
+            f"{abs(hprsw_standard_exergy_margin_gross):.2f} kWh/kg gross H₂ below the standard-state ΔG reference."
+        )
+    else:
         st.success(
-            f"Balanced-search candidate: plasma {_b['plasma']:.1f} kWh/kg H2, "
-            f"total H2 recovery {100*_b['recovery']:.1f}%, engine BTE {100*_b['engine_eff']:.1f}%, "
-            f"heat recovery {100*_b['heat_recovery']:.1f}%. Under the selected standard-state guards, "
-            f"this point gives about {100*_b['system_eff']:.1f}% total-energy-to-shaft efficiency."
+            f"Standard-state closure check is non-negative: energy margin "
+            f"{hprsw_standard_energy_margin_gross:+.2f} kWh/kg gross H₂ and simple exergy margin "
+            f"{hprsw_standard_exergy_margin_gross:+.2f} kWh/kg gross H₂."
         )
-else:
-    st.error(
-        "No energy-competitive point was found inside the selected V3.3 search ranges after applying "
-        "the standard-state energy and exergy guards. Expand the search ranges or improve the assumed architecture."
+
+    st.markdown("#### 2 · Electric-field and reduced-field diagnostic")
+    e1, e2, e3, e4 = st.columns(4)
+    e1.metric("Electric field E", f"{hprsw_field_v_cm:.1f} V/cm")
+    e2.metric("Gas number density N", f"{hprsw_number_density_m3:.2e} m⁻³")
+    e3.metric("Reduced field E/N", f"{hprsw_reduced_field_td:.2f} Td")
+    e4.metric("Ion drift velocity", f"{hprsw_ion_drift_velocity_m_s:.2f} m/s")
+
+    st.markdown(
+        f"""
+        <div class="horg-note">
+        <b>E/N interpretation:</b> E/N is calculated from the user-selected bulk field,
+        ideal-gas number density and separation-zone state. Local sheath fields, non-uniform
+        plasma fields, electron-energy distributions and species-specific transport are not solved.
+        The current input corresponds to <b>{hprsw_field_voltage_v:.0f} V</b> across
+        <b>{hprsw_electrode_gap_mm:.1f} mm</b> at <b>{hprsw_pressure_bar:.2f} bar</b> and
+        <b>{hprsw_separation_temp_c:.0f} °C</b>.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-
-# ============================================================
-# V3.3 PARETO FRONTIER — DECISION VIEW
-# ============================================================
-
-st.markdown("#### 7 · V3.3 Pareto Frontier — efficiency, cost and research stretch")
-
-st.caption(
-    "The primary frontier below uses only two objectives: maximize screened system efficiency and minimize "
-    "modeled operating cost. A Pareto point is not 'the winner'; it is a thermodynamically feasible grid point "
-    "for which no cheaper point has equal or higher efficiency. Plasma electricity and research stretch remain "
-    "visible as additional decision variables."
-)
-
-pf1, pf2, pf3, pf4 = st.columns(4)
-pf1.metric("Thermo-feasible points", f"{v29_thermo_count:,}")
-pf2.metric("Cost / efficiency Pareto points", f"{v30_pareto_count:,}")
-pf3.metric("Pareto + energy/cost competitive", f"{v30_dual_pareto_count:,}")
-pf4.metric(
-    "Conventional benchmark",
-    f"{100*conventional_eff:.1f}% · CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh",
-)
-
-if v29_thermo_points and v30_cost_eff_pareto_points:
-    # Keep the chart responsive while avoiding an unnecessarily heavy payload.
-    _v30_stride = max(1, len(v29_thermo_points) // 2600)
-    _v30_cloud_points = v29_thermo_points[::_v30_stride]
-
-    _v30_chart_rows = []
-    for _pnt in _v30_cloud_points:
-        _v30_chart_rows.append(
-            {
-                "Modeled cost CHF/kWh net": _pnt["cost_per_net_kwh"],
-                "System efficiency %": 100.0 * _pnt["system_eff"],
-                "Plasma kWh/kg H2": _pnt["plasma"],
-                "Research stretch %": 100.0 * _pnt["balanced_stretch"],
-                "Set": "Thermo-feasible grid",
-            }
-        )
-
-    for _pnt in v30_cost_eff_pareto_points:
-        _v30_chart_rows.append(
-            {
-                "Modeled cost CHF/kWh net": _pnt["cost_per_net_kwh"],
-                "System efficiency %": 100.0 * _pnt["system_eff"],
-                "Plasma kWh/kg H2": _pnt["plasma"],
-                "Research stretch %": 100.0 * _pnt["balanced_stretch"],
-                "Set": "Pareto frontier",
-            }
-        )
-
-    if v31_prototype_display_target is not None:
-        _v30_chart_rows.append(
-            {
-                "Modeled cost CHF/kWh net": v31_prototype_display_target["cost_per_net_kwh"],
-                "System efficiency %": 100.0 * v31_prototype_display_target["system_eff"],
-                "Plasma kWh/kg H2": v31_prototype_display_target["plasma"],
-                "Research stretch %": 100.0 * v31_prototype_display_target["balanced_stretch"],
-                "Set": "V3.3 prototype target",
-            }
-        )
-
-    _v30_chart_df = pd.DataFrame(_v30_chart_rows)
-
-    st.scatter_chart(
-        _v30_chart_df,
-        x="Modeled cost CHF/kWh net",
-        y="System efficiency %",
-        color="Set",
-        size="Plasma kWh/kg H2",
-        height=470,
+    st.markdown("#### 3 · Ion-separation and quench timescales")
+    q1, q2, q3, q4 = st.columns(4)
+    q1.metric(
+        "Ion separation time",
+        f"{1000*hprsw_ion_separation_time_s:.2f} ms" if math.isfinite(hprsw_ion_separation_time_s) else "∞",
     )
+    q2.metric("Residence / separation", f"{hprsw_separation_timescale_index:.2f}×")
+    q3.metric("Quench cooling rate", f"{hprsw_quench_cooling_rate_k_s:.2e} K/s")
+    q4.metric("Timescale H₂ survival", f"{100*hprsw_quench_survival_timescale:.1f}%")
+
+    if hprsw_separation_timescale_index < 1.0:
+        st.warning(
+            f"Ion-steering diagnostic: with the selected effective mobility, the charged-species residence "
+            f"time is shorter than the estimated drift time across {hprsw_separation_distance_mm:.1f} mm. "
+            f"The simple separation index is {hprsw_separation_timescale_index:.2f}×."
+        )
+    else:
+        st.success(
+            f"Ion-steering timescale is favorable in the simple drift model: the residence time is "
+            f"{hprsw_separation_timescale_index:.2f}× the calculated separation time. This is not a purity prediction."
+        )
 
     st.caption(
-        f"Reading the chart: lower cost is better on the x-axis and higher efficiency is better on the y-axis. "
-        f"Bubble size represents plasma electricity. The conventional reference is "
-        f"{100*conventional_eff:.1f}% and CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net. "
-        "The chart is a deterministic projection of the selected grid, not a probability distribution."
+        f"Quench model used in the mass balance: {hprsw_quench_loss_model}. "
+        f"Effective H₂ quench/recombination loss = {100*hprsw_quench_loss_effective:.2f}%. "
+        f"The first-order diagnostic uses τ_recomb = {hprsw_recomb_tau_ms:.1f} ms and "
+        f"t_quench = {hprsw_quench_time_ms:.2f} ms."
     )
 
-    def _v30_candidate_row(label, p):
+    st.markdown("#### 4 · First-order reactor sizing at the normalized power point")
+    r1a, r2a, r3a, r4a = st.columns(4)
+    r1a.metric("Estimated active gas volume", f"{hprsw_active_volume_l:.2f} L")
+    r2a.metric("Equivalent core diameter", f"{1000*hprsw_core_diameter_m:.0f} mm")
+    r3a.metric("Equivalent core length", f"{1000*hprsw_core_length_m:.0f} mm")
+    r4a.metric("Core power-density proxy", f"{hprsw_power_density_kw_l:.2f} kW/L")
+
+    r5a, r6a, r7a, r8a = st.columns(4)
+    r5a.metric("Steam circulation", f"{norm_hprsw_water_circulation_kg_h:.1f} kg/h")
+    r6a.metric("Argon circulation", f"{hprsw_norm_argon_circulation_kg_h:.2f} kg/h")
+    r7a.metric("Sensible quench duty", f"{hprsw_quench_sensible_duty_kw:.1f} kW")
+    r8a.metric("Coolant flow proxy", f"{hprsw_coolant_flow_l_min:.1f} L/min")
+
+    st.markdown(
+        """
+        <div class="horg-note">
+        <b>Sizing boundary:</b> active volume is inferred from ideal-gas volumetric flow × selected residence time.
+        The equivalent diameter/length assumes a simple cylindrical core. The quench duty uses a lumped constant Cp;
+        dissociation energy, radiative transfer, wall heat flux, electrode cooling and two-phase quench behavior are not solved.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### 5 · Automatic HPRS-W break-even solver vs conventional gasoline")
+
+    be1, be2, be3, be4 = st.columns(4)
+    be1.metric(
+        "Max plasma electricity for energy parity",
+        f"{hprsw_max_plasma_kwhkg_energy_parity:.1f} kWh/kg H₂"
+        if hprsw_max_plasma_kwhkg_energy_parity >= 0 else "Impossible at current heat load",
+    )
+    be2.metric(
+        "Required total H₂ recovery chain",
+        f"{100*hprsw_required_recovery_chain_energy_parity:.1f}%",
+    )
+    be3.metric(
+        "Required H₂-engine efficiency",
+        f"{100*hprsw_required_engine_eff_energy_parity:.1f}%",
+    )
+
+    if hprsw_required_heat_recovery_energy_parity <= 0:
+        heat_req_text = "0%"
+    elif hprsw_required_heat_recovery_energy_parity <= 1:
+        heat_req_text = f"{100*hprsw_required_heat_recovery_energy_parity:.1f}%"
+    else:
+        heat_req_text = ">100% (impossible)"
+    be4.metric("Required heat recovery", heat_req_text)
+
+    if hprsw_energy_parity_thermoneutral_margin < 0:
+        st.error(
+            f"Fundamental parity warning: at the current H2-engine efficiency and H2 recovery chain, "
+            f"the total gross energy ceiling required to equal the conventional {100*conventional_eff:.0f}% "
+            f"efficiency is {hprsw_allowed_total_gross_for_energy_parity:.2f} kWh/kg gross H2, which is "
+            f"{abs(hprsw_energy_parity_thermoneutral_margin):.2f} kWh/kg below the 298 K thermoneutral "
+            f"water-splitting reference. Energy parity is therefore not thermodynamically closed until "
+            f"engine efficiency and/or the H2 recovery chain improve."
+        )
+    else:
+        st.success(
+            f"The energy-parity ceiling is {hprsw_energy_parity_thermoneutral_margin:.2f} kWh/kg above "
+            f"the 298 K thermoneutral reference before detailed reactor losses."
+        )
+
+    bc1, bc2, bc3, bc4 = st.columns(4)
+    bc1.metric(
+        "Max plasma electricity for cost parity",
+        (
+            f"{hprsw_max_plasma_kwhkg_cost_parity:.1f} kWh/kg H₂"
+            if math.isfinite(hprsw_max_plasma_kwhkg_cost_parity)
+            else "No electricity-price limit"
+        ),
+    )
+    bc2.metric(
+        "Break-even electricity price",
+        f"CHF {hprsw_break_even_electricity_price_chf_kwh:.3f}/kWh"
+        if math.isfinite(hprsw_break_even_electricity_price_chf_kwh)
+        else "—",
+    )
+    bc3.metric("Current electricity price", f"CHF {electricity_price_chf_kwh:.3f}/kWh")
+    bc4.metric("Conventional cost benchmark", f"CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net")
+
+    energy_parity_possible = (
+        hprsw_max_plasma_kwhkg_energy_parity >= 0
+        and hprsw_required_recovery_chain_energy_parity <= 1.0
+        and hprsw_required_engine_eff_energy_parity <= 1.0
+        and hprsw_required_heat_recovery_energy_parity <= 1.0
+    )
+    cost_parity_possible = (
+        hprsw_max_plasma_kwhkg_cost_parity >= 0
+        if math.isfinite(hprsw_max_plasma_kwhkg_cost_parity)
+        else True
+    )
+
+    st.markdown(
+        f"""
+        <div class="horg-note">
+        <b>Break-even interpretation:</b><br>
+        Energy-parity feasibility under the current one-at-a-time algebra: <b>{'mathematically reachable' if energy_parity_possible else 'not reachable without changing multiple assumptions'}</b>.<br>
+        Cost-parity feasibility before capital cost, maintenance and lifecycle effects: <b>{'mathematically reachable' if cost_parity_possible else 'not reachable at the present non-electric operating costs'}</b>.<br><br>
+        The solver compares HPRS-W total external energy to the selected conventional gasoline brake efficiency.
+        It is a screening calculation, not an optimized reactor design.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("#### 6 · V3.3 multi-parameter feasible region")
+
+    st.caption(
+        "The grid below changes plasma electricity, total H2 recovery, H2-engine efficiency "
+        "and HPRS-W heat recovery simultaneously. Grid shares are deterministic search fractions, "
+        "not probabilities of experimental success."
+    )
+
+    fg1, fg2, fg3, fg4 = st.columns(4)
+    fg1.metric("Grid points scanned", f"{v29_total_grid_points:,}")
+    fg2.metric(
+        "Thermodynamically feasible",
+        f"{v29_thermo_count:,} ({100*v29_thermo_share:.1f}%)",
+    )
+    fg3.metric(
+        "Energy-competitive",
+        f"{v29_energy_competitive_count:,}",
+        help=(
+            f"Thermodynamically feasible grid points with total-energy-to-shaft efficiency "
+            f"at least the selected conventional benchmark ({100*conventional_eff:.1f}%)."
+        ),
+    )
+    fg4.metric(
+        "Energy + cost competitive",
+        f"{v29_dual_competitive_count:,}",
+        help="Points that satisfy both the energy benchmark and the current modeled operating-cost benchmark.",
+    )
+
+    current_status_parts = [
+        "thermodynamically feasible" if v29_current_thermo_ok else "thermodynamically rejected",
+        "energy-competitive" if v29_current_energy_competitive else "below energy benchmark",
+        "cost-competitive" if v29_current_cost_competitive else "above cost benchmark",
+    ]
+    st.markdown(
+        f"""
+        <div class="horg-note">
+        <b>Current selected HPRS-W point:</b> {', '.join(current_status_parts)}.<br>
+        Current screened total-energy-to-shaft efficiency = <b>{100*v29_current_system_eff:.1f}%</b>;
+        conventional benchmark = <b>{100*conventional_eff:.1f}%</b>.<br><br>
+        <b>Thermodynamic guards used by V3.3:</b>
+        total external energy must be at least <b>{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H2</b>
+        and modeled external exergy must be at least <b>{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H2</b>.
+        The heat-exergy contribution uses the selected heat-source temperature through a simple Carnot factor.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if v29_energy_competitive_points:
+        _ep = v29_energy_competitive_points
+        _p_min, _p_max = min(x["plasma"] for x in _ep), max(x["plasma"] for x in _ep)
+        _r_min, _r_max = min(x["recovery"] for x in _ep), max(x["recovery"] for x in _ep)
+        _e_min, _e_max = min(x["engine_eff"] for x in _ep), max(x["engine_eff"] for x in _ep)
+        _h_min, _h_max = min(x["heat_recovery"] for x in _ep), max(x["heat_recovery"] for x in _ep)
+
+        st.markdown("##### Coupled energy-competitive envelope")
+        ce1, ce2, ce3, ce4 = st.columns(4)
+        ce1.metric("Plasma electricity in competitive set", f"{_p_min:.1f}–{_p_max:.1f} kWh/kg H2")
+        ce2.metric("Total H2 recovery in competitive set", f"{100*_r_min:.1f}–{100*_r_max:.1f}%")
+        ce3.metric("H2-engine BTE in competitive set", f"{100*_e_min:.1f}–{100*_e_max:.1f}%")
+        ce4.metric("Heat recovery in competitive set", f"{100*_h_min:.1f}–{100*_h_max:.1f}%")
+
+        st.info(
+            "This is a coupled envelope: the displayed minima and maxima do not form one single operating point. "
+            "Each value occurs somewhere in a competitive combination with compensating values of the other variables."
+        )
+
+        def _v29_candidate_row(label, p):
+            return {
+                "Candidate": label,
+                "Plasma kWh/kg H2": f"{p['plasma']:.1f}",
+                "H2 recovery": f"{100*p['recovery']:.1f}%",
+                "Engine BTE": f"{100*p['engine_eff']:.1f}%",
+                "Heat recovery": f"{100*p['heat_recovery']:.1f}%",
+                "External heat kWh/kg": f"{p['external_heat']:.2f}",
+                "Total energy kWh/kg": f"{p['total_energy']:.2f}",
+                "System efficiency": f"{100*p['system_eff']:.1f}%",
+                "Modeled cost CHF/kWh net": f"{p['cost_per_net_kwh']:.3f}",
+            }
+
+        _candidate_rows = []
+        _seen_candidates = set()
+        for _label, _candidate in [
+            ("Balanced stretch from current point", v29_balanced_energy_candidate),
+            ("Lowest total external energy", v29_lowest_energy_candidate),
+            ("Lowest cost with energy + cost parity", v29_lowest_cost_dual_candidate),
+        ]:
+            if _candidate is None:
+                continue
+            _key = (
+                round(_candidate["plasma"], 8),
+                round(_candidate["recovery"], 8),
+                round(_candidate["engine_eff"], 8),
+                round(_candidate["heat_recovery"], 8),
+            )
+            if _key not in _seen_candidates:
+                _seen_candidates.add(_key)
+                _candidate_rows.append(_v29_candidate_row(_label, _candidate))
+
+        st.markdown("##### Representative feasible candidates")
+        st.table(_candidate_rows)
+
+        if v29_balanced_energy_candidate is not None:
+            _b = v29_balanced_energy_candidate
+            st.success(
+                f"Balanced-search candidate: plasma {_b['plasma']:.1f} kWh/kg H2, "
+                f"total H2 recovery {100*_b['recovery']:.1f}%, engine BTE {100*_b['engine_eff']:.1f}%, "
+                f"heat recovery {100*_b['heat_recovery']:.1f}%. Under the selected standard-state guards, "
+                f"this point gives about {100*_b['system_eff']:.1f}% total-energy-to-shaft efficiency."
+            )
+    else:
+        st.error(
+            "No energy-competitive point was found inside the selected V3.3 search ranges after applying "
+            "the standard-state energy and exergy guards. Expand the search ranges or improve the assumed architecture."
+        )
+
+
+    # ============================================================
+    # V3.3 PARETO FRONTIER — DECISION VIEW
+    # ============================================================
+
+    st.markdown("#### 7 · V3.3 Pareto Frontier — efficiency, cost and research stretch")
+
+    st.caption(
+        "The primary frontier below uses only two objectives: maximize screened system efficiency and minimize "
+        "modeled operating cost. A Pareto point is not 'the winner'; it is a thermodynamically feasible grid point "
+        "for which no cheaper point has equal or higher efficiency. Plasma electricity and research stretch remain "
+        "visible as additional decision variables."
+    )
+
+    pf1, pf2, pf3, pf4 = st.columns(4)
+    pf1.metric("Thermo-feasible points", f"{v29_thermo_count:,}")
+    pf2.metric("Cost / efficiency Pareto points", f"{v30_pareto_count:,}")
+    pf3.metric("Pareto + energy/cost competitive", f"{v30_dual_pareto_count:,}")
+    pf4.metric(
+        "Conventional benchmark",
+        f"{100*conventional_eff:.1f}% · CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh",
+    )
+
+    if v29_thermo_points and v30_cost_eff_pareto_points:
+        # Keep the chart responsive while avoiding an unnecessarily heavy payload.
+        _v30_stride = max(1, len(v29_thermo_points) // 2600)
+        _v30_cloud_points = v29_thermo_points[::_v30_stride]
+
+        _v30_chart_rows = []
+        for _pnt in _v30_cloud_points:
+            _v30_chart_rows.append(
+                {
+                    "Modeled cost CHF/kWh net": _pnt["cost_per_net_kwh"],
+                    "System efficiency %": 100.0 * _pnt["system_eff"],
+                    "Plasma kWh/kg H2": _pnt["plasma"],
+                    "Research stretch %": 100.0 * _pnt["balanced_stretch"],
+                    "Set": "Thermo-feasible grid",
+                }
+            )
+
+        for _pnt in v30_cost_eff_pareto_points:
+            _v30_chart_rows.append(
+                {
+                    "Modeled cost CHF/kWh net": _pnt["cost_per_net_kwh"],
+                    "System efficiency %": 100.0 * _pnt["system_eff"],
+                    "Plasma kWh/kg H2": _pnt["plasma"],
+                    "Research stretch %": 100.0 * _pnt["balanced_stretch"],
+                    "Set": "Pareto frontier",
+                }
+            )
+
+        if v31_prototype_display_target is not None:
+            _v30_chart_rows.append(
+                {
+                    "Modeled cost CHF/kWh net": v31_prototype_display_target["cost_per_net_kwh"],
+                    "System efficiency %": 100.0 * v31_prototype_display_target["system_eff"],
+                    "Plasma kWh/kg H2": v31_prototype_display_target["plasma"],
+                    "Research stretch %": 100.0 * v31_prototype_display_target["balanced_stretch"],
+                    "Set": "V3.3 prototype target",
+                }
+            )
+
+        _v30_chart_df = pd.DataFrame(_v30_chart_rows)
+
+        st.scatter_chart(
+            _v30_chart_df,
+            x="Modeled cost CHF/kWh net",
+            y="System efficiency %",
+            color="Set",
+            size="Plasma kWh/kg H2",
+            height=470,
+        )
+
+        st.caption(
+            f"Reading the chart: lower cost is better on the x-axis and higher efficiency is better on the y-axis. "
+            f"Bubble size represents plasma electricity. The conventional reference is "
+            f"{100*conventional_eff:.1f}% and CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net. "
+            "The chart is a deterministic projection of the selected grid, not a probability distribution."
+        )
+
+        def _v30_candidate_row(label, p):
+            if p is None:
+                return None
+            return {
+                "Decision point": label,
+                "Plasma kWh/kg H2": f"{p['plasma']:.1f}",
+                "H2 recovery": f"{100*p['recovery']:.1f}%",
+                "Engine BTE": f"{100*p['engine_eff']:.1f}%",
+                "Heat recovery": f"{100*p['heat_recovery']:.1f}%",
+                "Total energy kWh/kg": f"{p['total_energy']:.2f}",
+                "System efficiency": f"{100*p['system_eff']:.1f}%",
+                "Modeled cost CHF/kWh": f"{p['cost_per_net_kwh']:.3f}",
+                "Research stretch": f"{100*p['balanced_stretch']:.1f}%",
+                "Cost/eff Pareto": "Yes" if _v30_point_key(p) in _v30_pareto_keys else "No",
+            }
+
+        _v30_decision_rows = []
+        _v30_decision_seen = set()
+        for _label, _candidate in [
+            ("Pareto knee proxy", v30_knee_point),
+            ("Lowest modeled cost", v30_lowest_cost_point),
+            ("Highest screened efficiency", v30_max_efficiency_point),
+            ("Lowest plasma in dual-competitive set", v30_lowest_plasma_dual_point),
+            ("Minimum research stretch in dual set", v30_min_stretch_dual_point),
+        ]:
+            if _candidate is None:
+                continue
+            _key = _v30_point_key(_candidate)
+            if _key in _v30_decision_seen:
+                continue
+            _v30_decision_seen.add(_key)
+            _row = _v30_candidate_row(_label, _candidate)
+            if _row is not None:
+                _v30_decision_rows.append(_row)
+
+        st.markdown("##### Representative V3.3 decision points")
+        st.dataframe(_v30_decision_rows, use_container_width=True, hide_index=True)
+
+        if v30_knee_point is not None:
+            _k = v30_knee_point
+            st.success(
+                f"Pareto-knee proxy: plasma {_k['plasma']:.1f} kWh/kg H2, "
+                f"H2 recovery {100*_k['recovery']:.1f}%, engine BTE {100*_k['engine_eff']:.1f}%, "
+                f"heat recovery {100*_k['heat_recovery']:.1f}%, modeled system efficiency "
+                f"{100*_k['system_eff']:.1f}% and cost CHF {_k['cost_per_net_kwh']:.3f}/kWh net."
+            )
+
+        # Second projection: efficiency versus normalized research stretch.
+        _v30_stretch_rows = []
+        for _pnt in v29_thermo_points[::_v30_stride]:
+            _v30_stretch_rows.append(
+                {
+                    "Research stretch %": 100.0 * _pnt["balanced_stretch"],
+                    "System efficiency %": 100.0 * _pnt["system_eff"],
+                    "Plasma kWh/kg H2": _pnt["plasma"],
+                    "Set": "Thermo-feasible grid",
+                }
+            )
+        for _pnt in v30_stretch_eff_pareto_points:
+            _v30_stretch_rows.append(
+                {
+                    "Research stretch %": 100.0 * _pnt["balanced_stretch"],
+                    "System efficiency %": 100.0 * _pnt["system_eff"],
+                    "Plasma kWh/kg H2": _pnt["plasma"],
+                    "Set": "Stretch / efficiency frontier",
+                }
+            )
+
+        if v31_prototype_display_target is not None:
+            _v30_stretch_rows.append(
+                {
+                    "Research stretch %": 100.0 * v31_prototype_display_target["balanced_stretch"],
+                    "System efficiency %": 100.0 * v31_prototype_display_target["system_eff"],
+                    "Plasma kWh/kg H2": v31_prototype_display_target["plasma"],
+                    "Set": "V3.3 prototype target",
+                }
+            )
+
+        st.markdown("##### Efficiency vs research-stretch projection")
+        st.scatter_chart(
+            pd.DataFrame(_v30_stretch_rows),
+            x="Research stretch %",
+            y="System efficiency %",
+            color="Set",
+            size="Plasma kWh/kg H2",
+            height=420,
+        )
+
+        st.info(
+            "Research stretch is not a physical complexity measurement. It is the maximum normalized movement "
+            "from the currently selected HPRS-W operating point across plasma electricity, H2 recovery, engine BTE "
+            "and heat recovery. Lower values mean a smaller combined change inside the selected search box."
+        )
+    else:
+        st.warning(
+            "No Pareto frontier can be displayed because the selected search ranges contain no thermodynamically "
+            "feasible points."
+        )
+
+    # ============================================================
+    # V3.3 PROTOTYPE TARGET — CONSTRAINED ENGINEERING VIEW
+    # ============================================================
+
+    st.markdown("#### 8 · V3.3 Prototype Target — constrained engineering screen")
+
+    st.caption(
+        "This view intentionally limits the search to a more conservative first-prototype envelope. "
+        "It does not claim that the selected limits are experimentally demonstrated or easy to achieve."
+    )
+
+    pt1, pt2, pt3, pt4 = st.columns(4)
+    pt1.metric("Prototype-screen points", f"{v31_prototype_count:,}")
+    pt2.metric("Energy-competitive", f"{v31_prototype_energy_count:,}")
+    pt3.metric("Energy + cost competitive", f"{v31_prototype_dual_count:,}")
+    pt4.metric(
+        "Target criterion",
+        "Energy parity" if v31_prototype_target is not None else "Best available",
+    )
+
+    st.markdown(
+        f"""
+        <div class="horg-note">
+        <b>Prototype-screen limits:</b>
+        plasma electricity ≥ <b>{v31_proto_min_plasma:.1f} kWh/kg H2</b>,
+        total H2 recovery ≤ <b>{v31_proto_max_recovery_pct:.0f}%</b>,
+        H2-engine BTE ≤ <b>{v31_proto_max_engine_bte_pct:.0f}%</b>,
+        heat recovery ≤ <b>{v31_proto_max_heat_recovery_pct:.0f}%</b>.<br><br>
+        These are engineering-screen assumptions. The plasma floor is deliberately conservative and is
+        <b>not</b> a thermodynamic law on electrical input by itself. Standard-state total-energy and
+        exergy guards remain ΔH = <b>{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H2</b> and
+        ΔG = <b>{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H2</b> in this model.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+    def _v31_comparison_row(label, p, current=False):
+        if current:
+            return {
+                "Point": label,
+                "Plasma kWh/kg H2": f"{hprsw_plasma_electricity:.1f}",
+                "H2 recovery": f"{100*hprsw_recovery_chain:.1f}%",
+                "Engine BTE": f"{100*engine_eff:.1f}%",
+                "Heat recovery": f"{100*hprsw_heat_recovery:.1f}%",
+                "Total energy kWh/kg": f"{v29_current_total_energy:.2f}",
+                "System efficiency": f"{100*v29_current_system_eff:.1f}%",
+                "Modeled cost CHF/kWh": f"{v29_current_cost_per_net_kwh:.3f}",
+                "Energy parity": "Yes" if v29_current_energy_competitive else "No",
+                "Cost parity": "Yes" if v29_current_cost_competitive else "No",
+            }
         if p is None:
             return None
         return {
-            "Decision point": label,
+            "Point": label,
             "Plasma kWh/kg H2": f"{p['plasma']:.1f}",
             "H2 recovery": f"{100*p['recovery']:.1f}%",
             "Engine BTE": f"{100*p['engine_eff']:.1f}%",
@@ -3919,234 +4104,85 @@ if v29_thermo_points and v30_cost_eff_pareto_points:
             "Total energy kWh/kg": f"{p['total_energy']:.2f}",
             "System efficiency": f"{100*p['system_eff']:.1f}%",
             "Modeled cost CHF/kWh": f"{p['cost_per_net_kwh']:.3f}",
-            "Research stretch": f"{100*p['balanced_stretch']:.1f}%",
-            "Cost/eff Pareto": "Yes" if _v30_point_key(p) in _v30_pareto_keys else "No",
+            "Energy parity": "Yes" if p['system_eff'] + 1e-12 >= conventional_eff else "No",
+            "Cost parity": "Yes" if p['cost_per_net_kwh'] <= hprsw_conv_cost_benchmark_per_net_kwh + 1e-12 else "No",
         }
 
-    _v30_decision_rows = []
-    _v30_decision_seen = set()
-    for _label, _candidate in [
-        ("Pareto knee proxy", v30_knee_point),
-        ("Lowest modeled cost", v30_lowest_cost_point),
-        ("Highest screened efficiency", v30_max_efficiency_point),
-        ("Lowest plasma in dual-competitive set", v30_lowest_plasma_dual_point),
-        ("Minimum research stretch in dual set", v30_min_stretch_dual_point),
-    ]:
-        if _candidate is None:
-            continue
-        _key = _v30_point_key(_candidate)
-        if _key in _v30_decision_seen:
-            continue
-        _v30_decision_seen.add(_key)
-        _row = _v30_candidate_row(_label, _candidate)
-        if _row is not None:
-            _v30_decision_rows.append(_row)
-
-    st.markdown("##### Representative V3.3 decision points")
-    st.dataframe(_v30_decision_rows, use_container_width=True, hide_index=True)
-
-    if v30_knee_point is not None:
-        _k = v30_knee_point
-        st.success(
-            f"Pareto-knee proxy: plasma {_k['plasma']:.1f} kWh/kg H2, "
-            f"H2 recovery {100*_k['recovery']:.1f}%, engine BTE {100*_k['engine_eff']:.1f}%, "
-            f"heat recovery {100*_k['heat_recovery']:.1f}%, modeled system efficiency "
-            f"{100*_k['system_eff']:.1f}% and cost CHF {_k['cost_per_net_kwh']:.3f}/kWh net."
-        )
-
-    # Second projection: efficiency versus normalized research stretch.
-    _v30_stretch_rows = []
-    for _pnt in v29_thermo_points[::_v30_stride]:
-        _v30_stretch_rows.append(
-            {
-                "Research stretch %": 100.0 * _pnt["balanced_stretch"],
-                "System efficiency %": 100.0 * _pnt["system_eff"],
-                "Plasma kWh/kg H2": _pnt["plasma"],
-                "Set": "Thermo-feasible grid",
-            }
-        )
-    for _pnt in v30_stretch_eff_pareto_points:
-        _v30_stretch_rows.append(
-            {
-                "Research stretch %": 100.0 * _pnt["balanced_stretch"],
-                "System efficiency %": 100.0 * _pnt["system_eff"],
-                "Plasma kWh/kg H2": _pnt["plasma"],
-                "Set": "Stretch / efficiency frontier",
-            }
-        )
-
+    _v31_rows = [_v31_comparison_row("Current selected HPRS-W", None, current=True)]
     if v31_prototype_display_target is not None:
-        _v30_stretch_rows.append(
-            {
-                "Research stretch %": 100.0 * v31_prototype_display_target["balanced_stretch"],
-                "System efficiency %": 100.0 * v31_prototype_display_target["system_eff"],
-                "Plasma kWh/kg H2": v31_prototype_display_target["plasma"],
-                "Set": "V3.3 prototype target",
-            }
+        _v31_rows.append(
+            _v31_comparison_row(
+                "V3.3 Prototype Target" if v31_prototype_target is not None else "Best point inside prototype screen",
+                v31_prototype_display_target,
+            )
         )
+    if v30_knee_point is not None:
+        _v31_rows.append(_v31_comparison_row("Pareto knee — theoretical decision proxy", v30_knee_point))
 
-    st.markdown("##### Efficiency vs research-stretch projection")
-    st.scatter_chart(
-        pd.DataFrame(_v30_stretch_rows),
-        x="Research stretch %",
-        y="System efficiency %",
-        color="Set",
-        size="Plasma kWh/kg H2",
-        height=420,
-    )
+    st.markdown("##### Current point vs prototype target vs Pareto knee")
+    st.dataframe(_v31_rows, use_container_width=True, hide_index=True)
 
-    st.info(
-        "Research stretch is not a physical complexity measurement. It is the maximum normalized movement "
-        "from the currently selected HPRS-W operating point across plasma electricity, H2 recovery, engine BTE "
-        "and heat recovery. Lower values mean a smaller combined change inside the selected search box."
-    )
-else:
-    st.warning(
-        "No Pareto frontier can be displayed because the selected search ranges contain no thermodynamically "
-        "feasible points."
-    )
-
-# ============================================================
-# V3.3 PROTOTYPE TARGET — CONSTRAINED ENGINEERING VIEW
-# ============================================================
-
-st.markdown("#### 8 · V3.3 Prototype Target — constrained engineering screen")
-
-st.caption(
-    "This view intentionally limits the search to a more conservative first-prototype envelope. "
-    "It does not claim that the selected limits are experimentally demonstrated or easy to achieve."
-)
-
-pt1, pt2, pt3, pt4 = st.columns(4)
-pt1.metric("Prototype-screen points", f"{v31_prototype_count:,}")
-pt2.metric("Energy-competitive", f"{v31_prototype_energy_count:,}")
-pt3.metric("Energy + cost competitive", f"{v31_prototype_dual_count:,}")
-pt4.metric(
-    "Target criterion",
-    "Energy parity" if v31_prototype_target is not None else "Best available",
-)
-
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Prototype-screen limits:</b>
-    plasma electricity ≥ <b>{v31_proto_min_plasma:.1f} kWh/kg H2</b>,
-    total H2 recovery ≤ <b>{v31_proto_max_recovery_pct:.0f}%</b>,
-    H2-engine BTE ≤ <b>{v31_proto_max_engine_bte_pct:.0f}%</b>,
-    heat recovery ≤ <b>{v31_proto_max_heat_recovery_pct:.0f}%</b>.<br><br>
-    These are engineering-screen assumptions. The plasma floor is deliberately conservative and is
-    <b>not</b> a thermodynamic law on electrical input by itself. Standard-state total-energy and
-    exergy guards remain ΔH = <b>{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H2</b> and
-    ΔG = <b>{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H2</b> in this model.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-
-def _v31_comparison_row(label, p, current=False):
-    if current:
-        return {
-            "Point": label,
-            "Plasma kWh/kg H2": f"{hprsw_plasma_electricity:.1f}",
-            "H2 recovery": f"{100*hprsw_recovery_chain:.1f}%",
-            "Engine BTE": f"{100*engine_eff:.1f}%",
-            "Heat recovery": f"{100*hprsw_heat_recovery:.1f}%",
-            "Total energy kWh/kg": f"{v29_current_total_energy:.2f}",
-            "System efficiency": f"{100*v29_current_system_eff:.1f}%",
-            "Modeled cost CHF/kWh": f"{v29_current_cost_per_net_kwh:.3f}",
-            "Energy parity": "Yes" if v29_current_energy_competitive else "No",
-            "Cost parity": "Yes" if v29_current_cost_competitive else "No",
-        }
-    if p is None:
-        return None
-    return {
-        "Point": label,
-        "Plasma kWh/kg H2": f"{p['plasma']:.1f}",
-        "H2 recovery": f"{100*p['recovery']:.1f}%",
-        "Engine BTE": f"{100*p['engine_eff']:.1f}%",
-        "Heat recovery": f"{100*p['heat_recovery']:.1f}%",
-        "Total energy kWh/kg": f"{p['total_energy']:.2f}",
-        "System efficiency": f"{100*p['system_eff']:.1f}%",
-        "Modeled cost CHF/kWh": f"{p['cost_per_net_kwh']:.3f}",
-        "Energy parity": "Yes" if p['system_eff'] + 1e-12 >= conventional_eff else "No",
-        "Cost parity": "Yes" if p['cost_per_net_kwh'] <= hprsw_conv_cost_benchmark_per_net_kwh + 1e-12 else "No",
-    }
-
-_v31_rows = [_v31_comparison_row("Current selected HPRS-W", None, current=True)]
-if v31_prototype_display_target is not None:
-    _v31_rows.append(
-        _v31_comparison_row(
-            "V3.3 Prototype Target" if v31_prototype_target is not None else "Best point inside prototype screen",
-            v31_prototype_display_target,
+    if v31_prototype_target is not None:
+        _pt = v31_prototype_target
+        _pt_cost_gap = _pt["cost_per_net_kwh"] - hprsw_conv_cost_benchmark_per_net_kwh
+        st.success(
+            f"Prototype-oriented energy-parity target: plasma {_pt['plasma']:.1f} kWh/kg H2, "
+            f"H2 recovery {100*_pt['recovery']:.1f}%, engine BTE {100*_pt['engine_eff']:.1f}%, "
+            f"heat recovery {100*_pt['heat_recovery']:.1f}%. Modeled total-energy-to-shaft efficiency "
+            f"= {100*_pt['system_eff']:.1f}% versus {100*conventional_eff:.1f}% conventional."
         )
-    )
-if v30_knee_point is not None:
-    _v31_rows.append(_v31_comparison_row("Pareto knee — theoretical decision proxy", v30_knee_point))
-
-st.markdown("##### Current point vs prototype target vs Pareto knee")
-st.dataframe(_v31_rows, use_container_width=True, hide_index=True)
-
-if v31_prototype_target is not None:
-    _pt = v31_prototype_target
-    _pt_cost_gap = _pt["cost_per_net_kwh"] - hprsw_conv_cost_benchmark_per_net_kwh
-    st.success(
-        f"Prototype-oriented energy-parity target: plasma {_pt['plasma']:.1f} kWh/kg H2, "
-        f"H2 recovery {100*_pt['recovery']:.1f}%, engine BTE {100*_pt['engine_eff']:.1f}%, "
-        f"heat recovery {100*_pt['heat_recovery']:.1f}%. Modeled total-energy-to-shaft efficiency "
-        f"= {100*_pt['system_eff']:.1f}% versus {100*conventional_eff:.1f}% conventional."
-    )
-    if _pt_cost_gap <= 1e-12:
-        st.info(
-            f"This prototype target also meets the current modeled cost benchmark: "
-            f"CHF {_pt['cost_per_net_kwh']:.3f}/kWh net versus CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net."
+        if _pt_cost_gap <= 1e-12:
+            st.info(
+                f"This prototype target also meets the current modeled cost benchmark: "
+                f"CHF {_pt['cost_per_net_kwh']:.3f}/kWh net versus CHF {hprsw_conv_cost_benchmark_per_net_kwh:.3f}/kWh net."
+            )
+        else:
+            st.warning(
+                f"Energy parity is reached, but modeled operating cost is still CHF {_pt_cost_gap:.3f}/kWh net above "
+                f"the conventional benchmark. With the other selected cost assumptions unchanged, electricity would need "
+                f"to be about CHF {v31_prototype_break_even_electricity_price:.3f}/kWh or lower for cost parity at this point."
+            )
+    elif v31_prototype_best_available is not None:
+        _pb = v31_prototype_best_available
+        st.warning(
+            f"No point inside the current prototype-oriented limits reaches the {100*conventional_eff:.1f}% energy benchmark. "
+            f"The best screened point reaches {100*_pb['system_eff']:.1f}% with plasma {_pb['plasma']:.1f} kWh/kg H2, "
+            f"H2 recovery {100*_pb['recovery']:.1f}%, engine BTE {100*_pb['engine_eff']:.1f}% and "
+            f"heat recovery {100*_pb['heat_recovery']:.1f}%."
         )
     else:
-        st.warning(
-            f"Energy parity is reached, but modeled operating cost is still CHF {_pt_cost_gap:.3f}/kWh net above "
-            f"the conventional benchmark. With the other selected cost assumptions unchanged, electricity would need "
-            f"to be about CHF {v31_prototype_break_even_electricity_price:.3f}/kWh or lower for cost parity at this point."
+        st.error(
+            "The current prototype-oriented constraints contain no thermodynamically feasible grid point. "
+            "Relax one or more prototype-screen limits or widen the V3.3 feasible-region search ranges."
         )
-elif v31_prototype_best_available is not None:
-    _pb = v31_prototype_best_available
-    st.warning(
-        f"No point inside the current prototype-oriented limits reaches the {100*conventional_eff:.1f}% energy benchmark. "
-        f"The best screened point reaches {100*_pb['system_eff']:.1f}% with plasma {_pb['plasma']:.1f} kWh/kg H2, "
-        f"H2 recovery {100*_pb['recovery']:.1f}%, engine BTE {100*_pb['engine_eff']:.1f}% and "
-        f"heat recovery {100*_pb['heat_recovery']:.1f}%."
-    )
-else:
-    st.error(
-        "The current prototype-oriented constraints contain no thermodynamically feasible grid point. "
-        "Relax one or more prototype-screen limits or widen the V3.3 feasible-region search ranges."
-    )
 
-if v31_prototype_dual_target is not None:
-    _pd = v31_prototype_dual_target
-    st.caption(
-        f"A point satisfying both energy and modeled-cost parity exists inside the prototype screen: "
-        f"{_pd['plasma']:.1f} kWh/kg H2 plasma, {100*_pd['recovery']:.1f}% H2 recovery, "
-        f"{100*_pd['engine_eff']:.1f}% engine BTE and {100*_pd['heat_recovery']:.1f}% heat recovery."
-    )
-else:
-    st.caption(
-        "No energy+cost-parity point exists inside the current prototype-oriented limits at the selected prices. "
-        "That does not imply physical impossibility; it identifies an economic gap within this deterministic screen."
-    )
+    if v31_prototype_dual_target is not None:
+        _pd = v31_prototype_dual_target
+        st.caption(
+            f"A point satisfying both energy and modeled-cost parity exists inside the prototype screen: "
+            f"{_pd['plasma']:.1f} kWh/kg H2 plasma, {100*_pd['recovery']:.1f}% H2 recovery, "
+            f"{100*_pd['engine_eff']:.1f}% engine BTE and {100*_pd['heat_recovery']:.1f}% heat recovery."
+        )
+    else:
+        st.caption(
+            "No energy+cost-parity point exists inside the current prototype-oriented limits at the selected prices. "
+            "That does not imply physical impossibility; it identifies an economic gap within this deterministic screen."
+        )
 
 
-st.markdown(
-    f"""
-    <div class="horg-callout">
-    <b>V3.3 interpretation boundary:</b> a grid point marked feasible is only feasible within this
-    lumped screening model. The scan does not solve temperature-dependent Gibbs equilibrium,
-    electron-energy distributions, detailed H/O/OH kinetics, sheath fields, CFD, electrode erosion,
-    membrane selectivity, H2/O2 flammability management, transient control or capital cost.
-    A competitive grid point is therefore a <b>research target combination</b>, not a validated reactor design.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+    st.markdown(
+        f"""
+        <div class="horg-callout">
+        <b>V3.3 interpretation boundary:</b> a grid point marked feasible is only feasible within this
+        lumped screening model. The scan does not solve temperature-dependent Gibbs equilibrium,
+        electron-energy distributions, detailed H/O/OH kinetics, sheath fields, CFD, electrode erosion,
+        membrane selectivity, H2/O2 flammability management, transient control or capital cost.
+        A competitive grid point is therefore a <b>research target combination</b>, not a validated reactor design.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 
 # ============================================================
@@ -4439,444 +4475,446 @@ with st.expander("Rail public references and model equations"):
     )
 
 
-st.subheader("V3.3 Scientific Comparison — Same Net Shaft Power")
+st.markdown("---")
+with st.expander("Full scientific comparison, automotive hypotheses and references", expanded=False):
+    st.subheader("V3.3 Scientific Comparison — Same Net Shaft Power")
 
-st.caption(
-    f"All four pathways below are normalized to the same useful mechanical output: "
-    f"{comparison_net_kw:.0f} kW net shaft. HPRS-W uses external electricity/heat rather than gasoline."
-)
-
-n1, n2, n3, n4 = st.columns(4)
-n1.metric(
-    "Conventional gasoline",
-    f"{norm_conv_l_per_kwh:.3f} L/kWh net",
-    delta=None,
-)
-n2.metric(
-    "Dry HPRS",
-    (
-        f"{norm_dry_l_per_kwh:.3f} L/kWh net"
-        if math.isfinite(norm_dry_l_per_kwh) else "Not self-sustaining"
-    ),
-    delta=None,
-)
-n3.metric(
-    "Gasoline + steam",
-    (
-        f"{norm_steam_l_per_kwh:.3f} L/kWh net"
-        if math.isfinite(norm_steam_l_per_kwh) else "Not self-sustaining"
-    ),
-    delta=None,
-)
-
-n4.metric(
-    "HPRS-W water splitting",
-    f"{norm_hprsw_electric_per_kwh:.2f} kWh_e/kWh net",
-    delta=None,
-)
-
-st.dataframe(
-    {
-        "Normalized metric": [
-            "Net shaft basis",
-            "Gasoline consumption",
-            "H₂ delivered to engine",
-            "Make-up water",
-            "Process electricity",
-            "External process heat",
-            "Fuel-to-net-shaft efficiency",
-            "Total-energy-to-net efficiency",
-            "Carbon / CO₂ indicator",
-            "Solid carbon captured",
-            "Operating cost",
-        ],
-        "Conventional gasoline ICE": [
-            f"{comparison_net_kw:.0f} kW net",
-            f"{norm_conv_l_per_kwh:.3f} L/kWh net",
-            "0 kg/kWh net",
-            "0 L/kWh net",
-            "0 kWh_e/kWh net",
-            "0 kWh_th/kWh net",
-            f"{100*norm_conv_total_eff:.1f}%",
-            f"{100*norm_conv_total_eff:.1f}%",
-            f"{norm_conv_co2_per_kwh:.3f} kg CO₂/kWh net",
-            "0 kg/kWh net",
-            f"CHF {norm_conv_cost_per_kwh:.3f}/kWh net",
-        ],
-        "Dry HPRS carbon-retention": [
-            f"{comparison_net_kw:.0f} kW net",
-            (
-                f"{norm_dry_l_per_kwh:.3f} L/kWh net"
-                if math.isfinite(norm_dry_l_per_kwh) else "Not self-sustaining"
-            ),
-            (
-                f"{norm_dry_h2_per_kwh:.4f} kg/kWh net"
-                if math.isfinite(norm_dry_h2_per_kwh) else "—"
-            ),
-            "0 L/kWh net",
-            (
-                f"{norm_dry_electric_per_kwh:.3f} kWh_e/kWh net"
-                if math.isfinite(norm_dry_electric_per_kwh) else "—"
-            ),
-            "Not modeled in this route",
-            (
-                f"{100*norm_dry_total_eff:.1f}%"
-                if math.isfinite(norm_dry_fuel_kg_h) else "—"
-            ),
-            (
-                f"{100*norm_dry_total_eff:.1f}%"
-                if math.isfinite(norm_dry_fuel_kg_h) else "—"
-            ),
-            (
-                f"{norm_dry_uncaptured_co2_potential_per_kwh:.3f} kg CO₂/kWh net "
-                "uncaptured-C oxidation potential"
-                if math.isfinite(norm_dry_uncaptured_co2_potential_per_kwh) else "—"
-            ),
-            (
-                f"{norm_dry_captured_c_per_kwh:.3f} kg C/kWh net"
-                if math.isfinite(norm_dry_captured_c_per_kwh) else "—"
-            ),
-            (
-                f"CHF {norm_dry_cost_per_kwh:.3f}/kWh net"
-                if math.isfinite(norm_dry_cost_per_kwh) else "—"
-            ),
-        ],
-        "Gasoline + steam route": [
-            f"{comparison_net_kw:.0f} kW net",
-            (
-                f"{norm_steam_l_per_kwh:.3f} L/kWh net"
-                if math.isfinite(norm_steam_l_per_kwh) else "Not self-sustaining"
-            ),
-            (
-                f"{norm_steam_h2_per_kwh:.4f} kg/kWh net"
-                if math.isfinite(norm_steam_h2_per_kwh) else "—"
-            ),
-            (
-                f"{norm_steam_water_l_per_kwh:.3f} L/kWh net"
-                if math.isfinite(norm_steam_water_l_per_kwh) else "—"
-            ),
-            (
-                f"{norm_steam_electric_per_kwh:.3f} kWh_e/kWh net"
-                if math.isfinite(norm_steam_electric_per_kwh) else "—"
-            ),
-            (
-                f"{norm_steam_thermal_external_per_kwh:.3f} kWh_th/kWh net"
-                if math.isfinite(norm_steam_thermal_external_per_kwh) else "—"
-            ),
-            (
-                f"{100*norm_steam_fuel_eff:.1f}%"
-                if math.isfinite(norm_steam_fuel_kg_h) else "—"
-            ),
-            (
-                f"{100*norm_steam_total_eff:.1f}%"
-                if math.isfinite(norm_steam_fuel_kg_h) else "—"
-            ),
-            norm_steam_carbon_metric,
-            "0 kg/kWh net in selected ideal steam chemistry",
-            (
-                f"CHF {norm_steam_cost_per_kwh:.3f}/kWh net"
-                if math.isfinite(norm_steam_cost_per_kwh) else "—"
-            ),
-        ],
-        "HPRS-W plasma water splitting": [
-            f"{comparison_net_kw:.0f} kW net",
-            "0 L/kWh net",
-            f"{norm_hprsw_h2_per_kwh:.4f} kg/kWh net",
-            f"{norm_hprsw_water_l_per_kwh:.3f} L/kWh net",
-            f"{norm_hprsw_electric_per_kwh:.3f} kWh_e/kWh net",
-            f"{norm_hprsw_thermal_external_per_kwh:.3f} kWh_th/kWh net",
-            "N/A — no gasoline fuel",
-            f"{100*norm_hprsw_total_eff:.1f}%",
-            "0 kg direct CO₂/kWh net (electricity lifecycle not modeled)",
-            "0 kg solid C/kWh net",
-            f"CHF {norm_hprsw_cost_per_kwh:.3f}/kWh net",
-        ],
-    },
-    width="stretch",
-    hide_index=True,
-)
-
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>How to read V3.3:</b><br>
-    • Conventional gasoline is the reference at the same {comparison_net_kw:.0f} kW net.<br>
-    • Dry HPRS includes its onboard plasma electrical burden through increased fuel demand.
-      The displayed electrical value is the remaining plasma electricity after the selected
-      recovered-energy offset; it is <b>not added again to cost</b>, avoiding double counting.<br>
-    • The steam route includes electrical auxiliaries as onboard parasitic load, while thermal
-      process demand is reported separately. Only unrecovered thermal demand is included in the
-      total-energy efficiency, and it affects cost only if a non-zero thermal-energy price is entered.<br>
-    • In pulsed-plasma mode, the normalized Dry-HPRS result assumes the current effective
-      kWh/kg H₂ scales locally with hydrogen throughput; that scaling must be validated experimentally.
-    • HPRS-W assumes externally supplied electricity/heat. Direct CO₂ is zero in the modeled reaction,
-      but lifecycle emissions depend on how that electricity and heat are produced. Its O₂ coproduct
-      is reported separately and receives no economic credit unless a non-zero O₂ value is entered.<br>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-with st.expander("Current operating-point costs (non-normalized)"):
-    st.write(
-        f"Conventional gasoline: CHF {conventional_fuel_cost_chf_h:.2f}/h at "
-        f"{gross_engine_kw:.1f} kW gross shaft."
+    st.caption(
+        f"All four pathways below are normalized to the same useful mechanical output: "
+        f"{comparison_net_kw:.0f} kW net shaft. HPRS-W uses external electricity/heat rather than gasoline."
     )
-    st.write(
-        f"Dry HPRS fuel: CHF {dry_hprs_fuel_cost_chf_h:.2f}/h at "
-        f"{net_shaft_kw:.1f} kW net after plasma burden."
+
+    n1, n2, n3, n4 = st.columns(4)
+    n1.metric(
+        "Conventional gasoline",
+        f"{norm_conv_l_per_kwh:.3f} L/kWh net",
+        delta=None,
     )
-    st.write(
-        f"Steam route fuel + water: CHF "
-        f"{(steam_fuel_cost_chf_h + steam_water_cost_chf_h):.2f}/h at "
-        f"{steam_net_shaft_kw:.1f} kW net, excluding any priced supplemental heat."
+    n2.metric(
+        "Dry HPRS",
+        (
+            f"{norm_dry_l_per_kwh:.3f} L/kWh net"
+            if math.isfinite(norm_dry_l_per_kwh) else "Not self-sustaining"
+        ),
+        delta=None,
     )
-    if thermal_energy_price_chf_kwh > 0:
+    n3.metric(
+        "Gasoline + steam",
+        (
+            f"{norm_steam_l_per_kwh:.3f} L/kWh net"
+            if math.isfinite(norm_steam_l_per_kwh) else "Not self-sustaining"
+        ),
+        delta=None,
+    )
+
+    n4.metric(
+        "HPRS-W water splitting",
+        f"{norm_hprsw_electric_per_kwh:.2f} kWh_e/kWh net",
+        delta=None,
+    )
+
+    st.dataframe(
+        {
+            "Normalized metric": [
+                "Net shaft basis",
+                "Gasoline consumption",
+                "H₂ delivered to engine",
+                "Make-up water",
+                "Process electricity",
+                "External process heat",
+                "Fuel-to-net-shaft efficiency",
+                "Total-energy-to-net efficiency",
+                "Carbon / CO₂ indicator",
+                "Solid carbon captured",
+                "Operating cost",
+            ],
+            "Conventional gasoline ICE": [
+                f"{comparison_net_kw:.0f} kW net",
+                f"{norm_conv_l_per_kwh:.3f} L/kWh net",
+                "0 kg/kWh net",
+                "0 L/kWh net",
+                "0 kWh_e/kWh net",
+                "0 kWh_th/kWh net",
+                f"{100*norm_conv_total_eff:.1f}%",
+                f"{100*norm_conv_total_eff:.1f}%",
+                f"{norm_conv_co2_per_kwh:.3f} kg CO₂/kWh net",
+                "0 kg/kWh net",
+                f"CHF {norm_conv_cost_per_kwh:.3f}/kWh net",
+            ],
+            "Dry HPRS carbon-retention": [
+                f"{comparison_net_kw:.0f} kW net",
+                (
+                    f"{norm_dry_l_per_kwh:.3f} L/kWh net"
+                    if math.isfinite(norm_dry_l_per_kwh) else "Not self-sustaining"
+                ),
+                (
+                    f"{norm_dry_h2_per_kwh:.4f} kg/kWh net"
+                    if math.isfinite(norm_dry_h2_per_kwh) else "—"
+                ),
+                "0 L/kWh net",
+                (
+                    f"{norm_dry_electric_per_kwh:.3f} kWh_e/kWh net"
+                    if math.isfinite(norm_dry_electric_per_kwh) else "—"
+                ),
+                "Not modeled in this route",
+                (
+                    f"{100*norm_dry_total_eff:.1f}%"
+                    if math.isfinite(norm_dry_fuel_kg_h) else "—"
+                ),
+                (
+                    f"{100*norm_dry_total_eff:.1f}%"
+                    if math.isfinite(norm_dry_fuel_kg_h) else "—"
+                ),
+                (
+                    f"{norm_dry_uncaptured_co2_potential_per_kwh:.3f} kg CO₂/kWh net "
+                    "uncaptured-C oxidation potential"
+                    if math.isfinite(norm_dry_uncaptured_co2_potential_per_kwh) else "—"
+                ),
+                (
+                    f"{norm_dry_captured_c_per_kwh:.3f} kg C/kWh net"
+                    if math.isfinite(norm_dry_captured_c_per_kwh) else "—"
+                ),
+                (
+                    f"CHF {norm_dry_cost_per_kwh:.3f}/kWh net"
+                    if math.isfinite(norm_dry_cost_per_kwh) else "—"
+                ),
+            ],
+            "Gasoline + steam route": [
+                f"{comparison_net_kw:.0f} kW net",
+                (
+                    f"{norm_steam_l_per_kwh:.3f} L/kWh net"
+                    if math.isfinite(norm_steam_l_per_kwh) else "Not self-sustaining"
+                ),
+                (
+                    f"{norm_steam_h2_per_kwh:.4f} kg/kWh net"
+                    if math.isfinite(norm_steam_h2_per_kwh) else "—"
+                ),
+                (
+                    f"{norm_steam_water_l_per_kwh:.3f} L/kWh net"
+                    if math.isfinite(norm_steam_water_l_per_kwh) else "—"
+                ),
+                (
+                    f"{norm_steam_electric_per_kwh:.3f} kWh_e/kWh net"
+                    if math.isfinite(norm_steam_electric_per_kwh) else "—"
+                ),
+                (
+                    f"{norm_steam_thermal_external_per_kwh:.3f} kWh_th/kWh net"
+                    if math.isfinite(norm_steam_thermal_external_per_kwh) else "—"
+                ),
+                (
+                    f"{100*norm_steam_fuel_eff:.1f}%"
+                    if math.isfinite(norm_steam_fuel_kg_h) else "—"
+                ),
+                (
+                    f"{100*norm_steam_total_eff:.1f}%"
+                    if math.isfinite(norm_steam_fuel_kg_h) else "—"
+                ),
+                norm_steam_carbon_metric,
+                "0 kg/kWh net in selected ideal steam chemistry",
+                (
+                    f"CHF {norm_steam_cost_per_kwh:.3f}/kWh net"
+                    if math.isfinite(norm_steam_cost_per_kwh) else "—"
+                ),
+            ],
+            "HPRS-W plasma water splitting": [
+                f"{comparison_net_kw:.0f} kW net",
+                "0 L/kWh net",
+                f"{norm_hprsw_h2_per_kwh:.4f} kg/kWh net",
+                f"{norm_hprsw_water_l_per_kwh:.3f} L/kWh net",
+                f"{norm_hprsw_electric_per_kwh:.3f} kWh_e/kWh net",
+                f"{norm_hprsw_thermal_external_per_kwh:.3f} kWh_th/kWh net",
+                "N/A — no gasoline fuel",
+                f"{100*norm_hprsw_total_eff:.1f}%",
+                "0 kg direct CO₂/kWh net (electricity lifecycle not modeled)",
+                "0 kg solid C/kWh net",
+                f"CHF {norm_hprsw_cost_per_kwh:.3f}/kWh net",
+            ],
+        },
+        width="stretch",
+        hide_index=True,
+    )
+
+    st.markdown(
+        f"""
+        <div class="horg-note">
+        <b>How to read V3.3:</b><br>
+        • Conventional gasoline is the reference at the same {comparison_net_kw:.0f} kW net.<br>
+        • Dry HPRS includes its onboard plasma electrical burden through increased fuel demand.
+          The displayed electrical value is the remaining plasma electricity after the selected
+          recovered-energy offset; it is <b>not added again to cost</b>, avoiding double counting.<br>
+        • The steam route includes electrical auxiliaries as onboard parasitic load, while thermal
+          process demand is reported separately. Only unrecovered thermal demand is included in the
+          total-energy efficiency, and it affects cost only if a non-zero thermal-energy price is entered.<br>
+        • In pulsed-plasma mode, the normalized Dry-HPRS result assumes the current effective
+          kWh/kg H₂ scales locally with hydrogen throughput; that scaling must be validated experimentally.
+        • HPRS-W assumes externally supplied electricity/heat. Direct CO₂ is zero in the modeled reaction,
+          but lifecycle emissions depend on how that electricity and heat are produced. Its O₂ coproduct
+          is reported separately and receives no economic credit unless a non-zero O₂ value is entered.<br>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Current operating-point costs (non-normalized)"):
         st.write(
-            f"Steam supplemental thermal cost: CHF {steam_thermal_cost_chf_h:.2f}/h."
+            f"Conventional gasoline: CHF {conventional_fuel_cost_chf_h:.2f}/h at "
+            f"{gross_engine_kw:.1f} kW gross shaft."
         )
-    st.write(
-        f"HPRS-W normalized external electricity at {comparison_net_kw:.0f} kW net: "
-        f"{norm_hprsw_electric_kw:.1f} kW_e; external process heat: "
-        f"{norm_hprsw_thermal_external_kw:.1f} kW_th."
-    )
+        st.write(
+            f"Dry HPRS fuel: CHF {dry_hprs_fuel_cost_chf_h:.2f}/h at "
+            f"{net_shaft_kw:.1f} kW net after plasma burden."
+        )
+        st.write(
+            f"Steam route fuel + water: CHF "
+            f"{(steam_fuel_cost_chf_h + steam_water_cost_chf_h):.2f}/h at "
+            f"{steam_net_shaft_kw:.1f} kW net, excluding any priced supplemental heat."
+        )
+        if thermal_energy_price_chf_kwh > 0:
+            st.write(
+                f"Steam supplemental thermal cost: CHF {steam_thermal_cost_chf_h:.2f}/h."
+            )
+        st.write(
+            f"HPRS-W normalized external electricity at {comparison_net_kw:.0f} kW net: "
+            f"{norm_hprsw_electric_kw:.1f} kW_e; external process heat: "
+            f"{norm_hprsw_thermal_external_kw:.1f} kW_th."
+        )
 
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Steam-route chemistry in the selected model:</b><br>
-    {
-        "C₈H₁₈ + 16 H₂O → 8 CO₂ + 25 H₂"
-        if steam_route == "Steam reforming + WGS"
-        else "C₈H₁₈ + 8 H₂O → 8 CO + 17 H₂"
-    }<br><br>
-    Ideal H₂ yield: <b>{steam_h2_yield_kg_per_kg_fuel:.3f} kg H₂/kg fuel</b>.<br>
-    Stoichiometric gross water feed:
-    <b>{steam_water_kg_per_kg_fuel:.3f} kg H₂O/kg fuel</b> before any recycle.<br>
-    The thermal and electrical process inputs are separated in V3.3. The reaction-enthalpy
-    reference is only an ideal thermodynamic reference and does not represent complete hardware losses.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-if steam_route == "Steam reforming + WGS":
-    st.warning(
-        "The steam + WGS route increases hydrogen yield because part of the hydrogen "
-        "comes from water, but it converts the fuel carbon primarily to CO₂. "
-        "It is therefore not a solid-carbon-retention pathway unless a separate CO₂ "
-        "capture/conversion stage is added."
-    )
-else:
-    st.warning(
-        "The syngas route avoids full conversion to CO₂ in this simplified reaction, "
-        "but produces substantial CO. CO is toxic and must be shifted, oxidized, "
-        "separated or otherwise handled before any vehicle exhaust claim can be made."
-    )
-
-st.subheader("Hypothesis 1 — Conventional Gasoline Engine Benchmark")
-st.caption("Same fuel reference. Same engine-scale comparison. Different carbon pathway.")
-
-b1, b2, b3, b4 = st.columns(4)
-b1.metric("Conventional efficiency", f"{100*conventional_eff:.0f}%")
-b2.metric(
-    "Gasoline for same gross shaft",
-    f"{conv_same_gross_fuel_kg_h:.1f} kg/h",
-    f"{conv_same_gross_fuel_l_h:.1f} L/h",
-)
-b3.metric(
-    "Theoretical CO₂ at same gross shaft",
-    f"{conv_same_gross_co2_kg_h:.1f} kg/h",
-)
-b4.metric(
-    "HPRS / conventional net efficiency",
-    f"{(hprs_net_eff/conventional_eff):.2f}×",
-)
-
-st.dataframe(
-    {
-        "Metric": [
-            "Power basis",
-            "Fuel flow",
-            "Fuel volume",
-            "Reference fuel-to-shaft efficiency",
-            "Direct complete-oxidation CO₂",
-            "Captured solid carbon",
-            "Plasma equivalent shaft burden",
-        ],
-        "Conventional gasoline ICE": [
-            f"{gross_engine_kw:.1f} kW gross shaft",
-            f"{conv_same_gross_fuel_kg_h:.2f} kg/h",
-            f"{conv_same_gross_fuel_l_h:.2f} L/h",
-            f"{100*conventional_eff:.1f}%",
-            f"{conv_same_gross_co2_kg_h:.2f} kg/h",
-            "0 kg/h",
-            "0 kW",
-        ],
-        "HPRS Automotive": [
-            f"{net_shaft_kw:.1f} kW net after plasma",
-            f"{fuel_kg_h:.2f} kg/h",
-            f"{fuel_l_h:.2f} L/h",
-            f"{100*hprs_net_eff:.1f}%",
-            "Not calculated as tailpipe CO₂",
-            f"{carbon_captured_kg_h:.2f} kg/h",
-            f"{shaft_draw_for_plasma_kw:.2f} kW",
-        ],
-    },
-    width="stretch",
-    hide_index=True,
-)
-
-st.markdown(
-    f"""
-    <div class="horg-note">
-    <b>Same-net-power comparison:</b><br>
-    HPRS currently leaves <b>{same_net_target_kw:.1f} kW</b> net shaft power.
-    A conventional gasoline engine at {100*conventional_eff:.0f}% brake efficiency
-    would require about <b>{conv_same_net_fuel_kg_h:.2f} kg/h</b>
-    ({conv_same_net_fuel_l_h:.2f} L/h) to deliver the same useful shaft output,
-    corresponding to about <b>{conv_same_net_co2_kg_h:.2f} kg/h</b>
-    theoretical complete-oxidation CO₂ for the n-octane surrogate.<br><br>
-    Under the selected assumptions HPRS uses
-    <b>{fuel_ratio_same_net:.2f}×</b> the fuel mass of that same-net-power
-    conventional benchmark.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-st.subheader("Hypothesis 2 — Dry HPRS Carbon-Retention Interpretation")
-r1, r2, r3 = st.columns(3)
-r1.metric("Carbon collection", f"{carbon_capture*100:.0f}%")
-r2.metric("Captured carbon", f"{carbon_captured_kg_h:.1f} kg/h")
-r3.metric("Uncaptured-C oxidation potential", f"{uncaptured_c_oxidation_potential_kg_h:.1f} kg CO₂/h")
-
-st.markdown(
-    """
-    <div class="horg-callout">
-    <b>Scientific boundary:</b> this model does not calculate NOₓ, transient reactor behavior,
-    catalyst/electrode life, carbon morphology, soot filtration, startup energy, safety systems,
-    fuel impurities, compressor demand, hydrogen-purity specifications, thermal-management hardware,
-    lifecycle emissions or regulatory compliance. Hydrogen combustion with air can still form NOₓ.
-    A real claim of “non-polluting” operation therefore requires measured emissions and independent validation.
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-with st.expander("Model basis and references"):
     st.markdown(
         f"""
-        **Stoichiometric model**  
-        `C8H18 → 8 C(s) + 9 H2`
-
-        Ideal n-octane surrogate yield: **{H2_KG_PER_KG_FUEL_IDEAL:.3f} kg H₂** and
-        **{C_KG_PER_KG_FUEL_IDEAL:.3f} kg solid carbon** per kg fuel.
-
-        **Reference constants**
-        - NIST Chemistry WebBook, n-octane: standard liquid enthalpy of formation ≈ **−250 kJ/mol**.
-          This gives a standard-state decomposition floor of ≈ **{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂**.
-        - U.S. Department of Energy: hydrogen LHV = **33.3 kWh/kg H₂**.
-
-        **Design-target diagnosis**
-
-        The V3.3 design diagnosis varies one lever at a time and solves the
-        simplified balance backwards for the selected net-power target.
-        It can estimate the required gross engine power, H₂-engine efficiency,
-        recovered-energy offset, or plasma specific electricity. A value being
-        mathematically reachable in the model is not evidence that the required
-        hardware performance is experimentally achievable.
-
-        **V3.3 four-pathway same-net-power normalization**
-
-        The primary comparison rescales all four pathways to the same selected net shaft power.  
-        Dry-HPRS plasma electricity is treated as an onboard parasitic load.  
-        Steam-route thermal demand and electrical auxiliaries are reported separately.  
-        Unrecovered process heat is included in total-energy efficiency but is priced only when a thermal-energy price is entered.
-
-        **Steam-assisted comparison**
-
-        Two idealized n-octane references are available:
-
-        `C8H18 + 8 H2O -> 8 CO + 17 H2`
-
-        and, after complete water-gas shift:
-
-        `C8H18 + 16 H2O -> 8 CO2 + 25 H2`
-
-        The steam route increases hydrogen yield because water supplies additional
-        hydrogen atoms. In the complete-WGS case, however, the fuel carbon becomes
-        CO2 rather than retained solid carbon. The process-energy input and heat
-        recovery are editable scenario assumptions.
-
-        **Pulsed-plasma interpretation**  
-`P_avg = energy_per_pulse × pulse_frequency × active_cells`  
-Pulse width is used to estimate instantaneous peak power and electrical duty cycle. These values are research controls, not validated automotive reactor specifications.
-
-**Boundary:** gasoline is a mixture. n-octane is only a transparent first surrogate;
-        real fuel requires species-resolved chemistry and laboratory data.
-        """
+        <div class="horg-note">
+        <b>Steam-route chemistry in the selected model:</b><br>
+        {
+            "C₈H₁₈ + 16 H₂O → 8 CO₂ + 25 H₂"
+            if steam_route == "Steam reforming + WGS"
+            else "C₈H₁₈ + 8 H₂O → 8 CO + 17 H₂"
+        }<br><br>
+        Ideal H₂ yield: <b>{steam_h2_yield_kg_per_kg_fuel:.3f} kg H₂/kg fuel</b>.<br>
+        Stoichiometric gross water feed:
+        <b>{steam_water_kg_per_kg_fuel:.3f} kg H₂O/kg fuel</b> before any recycle.<br>
+        The thermal and electrical process inputs are separated in V3.3. The reaction-enthalpy
+        reference is only an ideal thermodynamic reference and does not represent complete hardware losses.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-with st.expander("HPRS-W model basis and benchmark references"):
+    if steam_route == "Steam reforming + WGS":
+        st.warning(
+            "The steam + WGS route increases hydrogen yield because part of the hydrogen "
+            "comes from water, but it converts the fuel carbon primarily to CO₂. "
+            "It is therefore not a solid-carbon-retention pathway unless a separate CO₂ "
+            "capture/conversion stage is added."
+        )
+    else:
+        st.warning(
+            "The syngas route avoids full conversion to CO₂ in this simplified reaction, "
+            "but produces substantial CO. CO is toxic and must be shifted, oxidized, "
+            "separated or otherwise handled before any vehicle exhaust claim can be made."
+        )
+
+    st.subheader("Hypothesis 1 — Conventional Gasoline Engine Benchmark")
+    st.caption("Same fuel reference. Same engine-scale comparison. Different carbon pathway.")
+
+    b1, b2, b3, b4 = st.columns(4)
+    b1.metric("Conventional efficiency", f"{100*conventional_eff:.0f}%")
+    b2.metric(
+        "Gasoline for same gross shaft",
+        f"{conv_same_gross_fuel_kg_h:.1f} kg/h",
+        f"{conv_same_gross_fuel_l_h:.1f} L/h",
+    )
+    b3.metric(
+        "Theoretical CO₂ at same gross shaft",
+        f"{conv_same_gross_co2_kg_h:.1f} kg/h",
+    )
+    b4.metric(
+        "HPRS / conventional net efficiency",
+        f"{(hprs_net_eff/conventional_eff):.2f}×",
+    )
+
+    st.dataframe(
+        {
+            "Metric": [
+                "Power basis",
+                "Fuel flow",
+                "Fuel volume",
+                "Reference fuel-to-shaft efficiency",
+                "Direct complete-oxidation CO₂",
+                "Captured solid carbon",
+                "Plasma equivalent shaft burden",
+            ],
+            "Conventional gasoline ICE": [
+                f"{gross_engine_kw:.1f} kW gross shaft",
+                f"{conv_same_gross_fuel_kg_h:.2f} kg/h",
+                f"{conv_same_gross_fuel_l_h:.2f} L/h",
+                f"{100*conventional_eff:.1f}%",
+                f"{conv_same_gross_co2_kg_h:.2f} kg/h",
+                "0 kg/h",
+                "0 kW",
+            ],
+            "HPRS Automotive": [
+                f"{net_shaft_kw:.1f} kW net after plasma",
+                f"{fuel_kg_h:.2f} kg/h",
+                f"{fuel_l_h:.2f} L/h",
+                f"{100*hprs_net_eff:.1f}%",
+                "Not calculated as tailpipe CO₂",
+                f"{carbon_captured_kg_h:.2f} kg/h",
+                f"{shaft_draw_for_plasma_kw:.2f} kW",
+            ],
+        },
+        width="stretch",
+        hide_index=True,
+    )
+
     st.markdown(
         f"""
-        **Architecture source used for this model**
-
-        The supplied HTPR-QS diagram proposes: steam preheat/vaporization, argon mixing,
-        a high-temperature plasma core, DC-field species separation, rapid quench,
-        H₂/O₂ separation, heat recovery and steam recirculation. The diagram's stated
-        performance values are treated as **targets/assumptions**, not measured validation data.
-
-        **Stoichiometry**
-
-        `2 H2O -> 2 H2 + O2`
-
-        - minimum water consumed: **{WATER_KG_PER_KG_H2_STOICH:.3f} kg/kg H₂**
-        - ideal oxygen coproduct: **{O2_KG_PER_KG_H2_STOICH:.3f} kg/kg H₂**
-
-        **External benchmark guideposts (U.S. DOE 2026 system targets)**
-
-        - PEM electrolysis: **{DOE_PEM_2026_SYSTEM_KWH_KG_H2:.0f} kWh_e/kg H₂** system energy
-        - high-temperature electrolysis: **{DOE_HTE_2026_ELECTRIC_KWH_KG_H2:.0f} kWh_e/kg H₂** electrical
-        - high-temperature electrolysis: **{DOE_HTE_2026_TOTAL_KWH_KG_H2:.0f} kWh/kg H₂** total energy
-
-        References:
-        - https://www.energy.gov/cmei/fuels/technical-targets-proton-exchange-membrane-electrolysis
-        - https://stage.energy.gov/cmei/fuels/technical-targets-high-temperature-electrolysis
-
-        **V3.3 plasma-catalysis / RF research references**
-
-        - Li et al., *Journal of Cleaner Production* 387 (2023) 135913: H₂O/Ar non-thermal plasma water splitting with catalyst packing; optimized 0.2 wt.% Au/(10 wt.% TiO₂/SBA-15) is reported as a strong performance-improvement case. V3.3 does **not** convert that published rate improvement into an automatic energy credit.
-        - ACS Catalysis 2024 review, DOI 10.1021/acscatal.3c05434: plasma hydrogen production depends on discharge power/frequency, SEI, flow, reactor geometry and catalyst properties; system input power exceeds plasma discharge power because auxiliaries and matching losses matter.
-        - ITU-R ISM guideposts: 13.56, 27.12 and 40.68 MHz are standard ISM centre frequencies. V3.3 treats them as selectable engineering carriers, not performance optima.
-
-        **V3.3 standard-state thermodynamic references**
-
-        NIST-JANAF water(l), 298.15 K, 1 bar:
-        - reaction Gibbs requirement: **{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H₂**
-        - reaction enthalpy / thermoneutral reference: **{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H₂**
-        - corresponding reversible voltage: **{WATER_SPLIT_REV_VOLTAGE_V:.3f} V**
-        - corresponding thermoneutral voltage: **{WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V:.3f} V**
-
-        References:
-        - https://janaf.nist.gov/tables/H-063.html
-        - https://www.hydrogen.energy.gov/docs/hydrogenprogramlibraries/pdfs/46676.pdf
-
-        **V3.3 advanced diagnostic boundary**
-
-        E/N uses an ideal-gas bulk number density. Ion drift uses a user-supplied effective mobility.
-        Quench survival uses an optional first-order lumped timescale. Reactor volume is inferred from
-        ideal-gas flow × residence time. The V3.3 feasible-region solver then scans coupled values of
-        plasma electricity, total H₂ recovery, H₂-engine efficiency and heat recovery. It rejects points
-        that fail the standard-state ΔH energy guard or the simple ΔG exergy guard before comparing them
-        with the conventional gasoline efficiency and operating-cost benchmarks. Grid fractions are
-        deterministic search results, not probabilities. These remain screening equations only; V3.3
-        still does not solve non-equilibrium plasma kinetics, electron-energy distributions, sheath physics,
-        detailed CFD, electrode erosion, radiative heat transfer, membrane selectivity, H₂/O₂ flammability
-        management, startup energy or transient vehicle dynamics. The V3.3 rail extension adds a first-order
-        regional-train mission model but does not replace OEM route simulation or rail homologation analysis.
-        """
+        <div class="horg-note">
+        <b>Same-net-power comparison:</b><br>
+        HPRS currently leaves <b>{same_net_target_kw:.1f} kW</b> net shaft power.
+        A conventional gasoline engine at {100*conventional_eff:.0f}% brake efficiency
+        would require about <b>{conv_same_net_fuel_kg_h:.2f} kg/h</b>
+        ({conv_same_net_fuel_l_h:.2f} L/h) to deliver the same useful shaft output,
+        corresponding to about <b>{conv_same_net_co2_kg_h:.2f} kg/h</b>
+        theoretical complete-oxidation CO₂ for the n-octane surrogate.<br><br>
+        Under the selected assumptions HPRS uses
+        <b>{fuel_ratio_same_net:.2f}×</b> the fuel mass of that same-net-power
+        conventional benchmark.
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
 
-st.caption("HPRS Automotive + Rail V3.3 · Pareto + prototype target + regional-train application · Simulation → laboratory validation → proof of concept")
+    st.subheader("Hypothesis 2 — Dry HPRS Carbon-Retention Interpretation")
+    r1, r2, r3 = st.columns(3)
+    r1.metric("Carbon collection", f"{carbon_capture*100:.0f}%")
+    r2.metric("Captured carbon", f"{carbon_captured_kg_h:.1f} kg/h")
+    r3.metric("Uncaptured-C oxidation potential", f"{uncaptured_c_oxidation_potential_kg_h:.1f} kg CO₂/h")
+
+    st.markdown(
+        """
+        <div class="horg-callout">
+        <b>Scientific boundary:</b> this model does not calculate NOₓ, transient reactor behavior,
+        catalyst/electrode life, carbon morphology, soot filtration, startup energy, safety systems,
+        fuel impurities, compressor demand, hydrogen-purity specifications, thermal-management hardware,
+        lifecycle emissions or regulatory compliance. Hydrogen combustion with air can still form NOₓ.
+        A real claim of “non-polluting” operation therefore requires measured emissions and independent validation.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.expander("Model basis and references"):
+        st.markdown(
+            f"""
+            **Stoichiometric model**  
+            `C8H18 → 8 C(s) + 9 H2`
+
+            Ideal n-octane surrogate yield: **{H2_KG_PER_KG_FUEL_IDEAL:.3f} kg H₂** and
+            **{C_KG_PER_KG_FUEL_IDEAL:.3f} kg solid carbon** per kg fuel.
+
+            **Reference constants**
+            - NIST Chemistry WebBook, n-octane: standard liquid enthalpy of formation ≈ **−250 kJ/mol**.
+              This gives a standard-state decomposition floor of ≈ **{THERMO_MIN_KWH_PER_KG_H2:.2f} kWh/kg H₂**.
+            - U.S. Department of Energy: hydrogen LHV = **33.3 kWh/kg H₂**.
+
+            **Design-target diagnosis**
+
+            The V3.3 design diagnosis varies one lever at a time and solves the
+            simplified balance backwards for the selected net-power target.
+            It can estimate the required gross engine power, H₂-engine efficiency,
+            recovered-energy offset, or plasma specific electricity. A value being
+            mathematically reachable in the model is not evidence that the required
+            hardware performance is experimentally achievable.
+
+            **V3.3 four-pathway same-net-power normalization**
+
+            The primary comparison rescales all four pathways to the same selected net shaft power.  
+            Dry-HPRS plasma electricity is treated as an onboard parasitic load.  
+            Steam-route thermal demand and electrical auxiliaries are reported separately.  
+            Unrecovered process heat is included in total-energy efficiency but is priced only when a thermal-energy price is entered.
+
+            **Steam-assisted comparison**
+
+            Two idealized n-octane references are available:
+
+            `C8H18 + 8 H2O -> 8 CO + 17 H2`
+
+            and, after complete water-gas shift:
+
+            `C8H18 + 16 H2O -> 8 CO2 + 25 H2`
+
+            The steam route increases hydrogen yield because water supplies additional
+            hydrogen atoms. In the complete-WGS case, however, the fuel carbon becomes
+            CO2 rather than retained solid carbon. The process-energy input and heat
+            recovery are editable scenario assumptions.
+
+            **Pulsed-plasma interpretation**  
+    `P_avg = energy_per_pulse × pulse_frequency × active_cells`  
+    Pulse width is used to estimate instantaneous peak power and electrical duty cycle. These values are research controls, not validated automotive reactor specifications.
+
+    **Boundary:** gasoline is a mixture. n-octane is only a transparent first surrogate;
+            real fuel requires species-resolved chemistry and laboratory data.
+            """
+        )
+
+    with st.expander("HPRS-W model basis and benchmark references"):
+        st.markdown(
+            f"""
+            **Architecture source used for this model**
+
+            The supplied HTPR-QS diagram proposes: steam preheat/vaporization, argon mixing,
+            a high-temperature plasma core, DC-field species separation, rapid quench,
+            H₂/O₂ separation, heat recovery and steam recirculation. The diagram's stated
+            performance values are treated as **targets/assumptions**, not measured validation data.
+
+            **Stoichiometry**
+
+            `2 H2O -> 2 H2 + O2`
+
+            - minimum water consumed: **{WATER_KG_PER_KG_H2_STOICH:.3f} kg/kg H₂**
+            - ideal oxygen coproduct: **{O2_KG_PER_KG_H2_STOICH:.3f} kg/kg H₂**
+
+            **External benchmark guideposts (U.S. DOE 2026 system targets)**
+
+            - PEM electrolysis: **{DOE_PEM_2026_SYSTEM_KWH_KG_H2:.0f} kWh_e/kg H₂** system energy
+            - high-temperature electrolysis: **{DOE_HTE_2026_ELECTRIC_KWH_KG_H2:.0f} kWh_e/kg H₂** electrical
+            - high-temperature electrolysis: **{DOE_HTE_2026_TOTAL_KWH_KG_H2:.0f} kWh/kg H₂** total energy
+
+            References:
+            - https://www.energy.gov/cmei/fuels/technical-targets-proton-exchange-membrane-electrolysis
+            - https://stage.energy.gov/cmei/fuels/technical-targets-high-temperature-electrolysis
+
+            **V3.3 plasma-catalysis / RF research references**
+
+            - Li et al., *Journal of Cleaner Production* 387 (2023) 135913: H₂O/Ar non-thermal plasma water splitting with catalyst packing; optimized 0.2 wt.% Au/(10 wt.% TiO₂/SBA-15) is reported as a strong performance-improvement case. V3.3 does **not** convert that published rate improvement into an automatic energy credit.
+            - ACS Catalysis 2024 review, DOI 10.1021/acscatal.3c05434: plasma hydrogen production depends on discharge power/frequency, SEI, flow, reactor geometry and catalyst properties; system input power exceeds plasma discharge power because auxiliaries and matching losses matter.
+            - ITU-R ISM guideposts: 13.56, 27.12 and 40.68 MHz are standard ISM centre frequencies. V3.3 treats them as selectable engineering carriers, not performance optima.
+
+            **V3.3 standard-state thermodynamic references**
+
+            NIST-JANAF water(l), 298.15 K, 1 bar:
+            - reaction Gibbs requirement: **{WATER_SPLIT_REV_KWH_PER_KG_H2:.2f} kWh/kg H₂**
+            - reaction enthalpy / thermoneutral reference: **{WATER_SPLIT_THERMONEUTRAL_KWH_PER_KG_H2:.2f} kWh/kg H₂**
+            - corresponding reversible voltage: **{WATER_SPLIT_REV_VOLTAGE_V:.3f} V**
+            - corresponding thermoneutral voltage: **{WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V:.3f} V**
+
+            References:
+            - https://janaf.nist.gov/tables/H-063.html
+            - https://www.hydrogen.energy.gov/docs/hydrogenprogramlibraries/pdfs/46676.pdf
+
+            **V3.3 advanced diagnostic boundary**
+
+            E/N uses an ideal-gas bulk number density. Ion drift uses a user-supplied effective mobility.
+            Quench survival uses an optional first-order lumped timescale. Reactor volume is inferred from
+            ideal-gas flow × residence time. The V3.3 feasible-region solver then scans coupled values of
+            plasma electricity, total H₂ recovery, H₂-engine efficiency and heat recovery. It rejects points
+            that fail the standard-state ΔH energy guard or the simple ΔG exergy guard before comparing them
+            with the conventional gasoline efficiency and operating-cost benchmarks. Grid fractions are
+            deterministic search results, not probabilities. These remain screening equations only; V3.3
+            still does not solve non-equilibrium plasma kinetics, electron-energy distributions, sheath physics,
+            detailed CFD, electrode erosion, radiative heat transfer, membrane selectivity, H₂/O₂ flammability
+            management, startup energy or transient vehicle dynamics. The V3.3 rail extension adds a first-order
+            regional-train mission model but does not replace OEM route simulation or rail homologation analysis.
+            """
+        )
+
+    st.caption("HPRS Automotive + Rail V3.3 · Pareto + prototype target + regional-train application · Simulation → laboratory validation → proof of concept")
