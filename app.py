@@ -11,7 +11,7 @@ st.set_page_config(
 
 
 # ============================================================
-# V3.5.3 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
+# V3.5.4 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
 # ============================================================
 # The simulator keeps English strings as the internal model vocabulary so
 # scenario logic, comparisons and CSV calculations are not changed by language.
@@ -369,14 +369,14 @@ _HORG_PHRASES_DE = {
     "Lowest PV CAPEX/kWp allowed": "Niedrigste zulässige PV-CAPEX/kWp",
     "Lowest real financing rate allowed": "Niedrigster zulässiger realer Finanzierungssatz",
     "Economic search resolution": "Auflösung der Wirtschaftlichkeitssuche",
-    "Run V3.5.3 single-target search": "V3.5.3 Einzelzielsuche starten",
-    "Download V3.5.3 target scenario": "V3.5.3 Zielszenario herunterladen",
+    "Run V3.5.4 single-target search": "V3.5.4 Einzelzielsuche starten",
+    "Download V3.5.4 target scenario": "V3.5.4 Zielszenario herunterladen",
     "economic frontier": "Wirtschaftlichkeitsgrenze",
     "required conditions for CHF/kg targets": "erforderliche Bedingungen für CHF/kg-Ziele",
     "frontier targets and shared limits": "Grenzziele und gemeinsame Limits",
     "Gross rail H₂ frontier targets": "Brutto-Bahn-H₂-Ziele der Wirtschaftlichkeitsgrenze",
-    "Run V3.5.3 economic frontier": "V3.5.3 Wirtschaftlichkeitsgrenze berechnen",
-    "Download V3.5.3 economic frontier": "V3.5.3 Wirtschaftlichkeitsgrenze herunterladen",
+    "Run V3.5.4 economic frontier": "V3.5.4 Wirtschaftlichkeitsgrenze berechnen",
+    "Download V3.5.4 economic frontier": "V3.5.4 Wirtschaftlichkeitsgrenze herunterladen",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Separaten HydrogenOrg Hybrid Energy Simulator öffnen",
     "Rail public references and model equations": "Öffentliche Bahnquellen und Modellgleichungen",
     "Full scientific comparison, automotive hypotheses and references": "Vollständiger wissenschaftlicher Vergleich, Automotive-Hypothesen und Quellen",
@@ -688,14 +688,14 @@ _HORG_PHRASES_IT = {
     "Lowest PV CAPEX/kWp allowed": "CAPEX PV/kWp minimo consentito",
     "Lowest real financing rate allowed": "Tasso reale minimo di finanziamento consentito",
     "Economic search resolution": "Risoluzione della ricerca economica",
-    "Run V3.5.3 single-target search": "Avvia ricerca V3.5.3 obiettivo singolo",
-    "Download V3.5.3 target scenario": "Scarica scenario obiettivo V3.5.3",
+    "Run V3.5.4 single-target search": "Avvia ricerca V3.5.4 obiettivo singolo",
+    "Download V3.5.4 target scenario": "Scarica scenario obiettivo V3.5.4",
     "economic frontier": "frontiera economica",
     "required conditions for CHF/kg targets": "condizioni richieste per gli obiettivi CHF/kg",
     "frontier targets and shared limits": "obiettivi di frontiera e limiti condivisi",
     "Gross rail H₂ frontier targets": "Obiettivi di frontiera del costo lordo H₂ ferroviario",
-    "Run V3.5.3 economic frontier": "Calcola frontiera economica V3.5.3",
-    "Download V3.5.3 economic frontier": "Scarica frontiera economica V3.5.3",
+    "Run V3.5.4 economic frontier": "Calcola frontiera economica V3.5.4",
+    "Download V3.5.4 economic frontier": "Scarica frontiera economica V3.5.4",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Apri il simulatore HydrogenOrg Hybrid Energy separato",
     "Rail public references and model equations": "Riferimenti ferroviari pubblici ed equazioni del modello",
     "Full scientific comparison, automotive hypotheses and references": "Confronto scientifico completo, ipotesi automotive e riferimenti",
@@ -740,7 +740,7 @@ _HORG_PHRASES_IT = {
 
 
 # ============================================================
-# V3.5.3 — COMPLETE HIGH-VISIBILITY DE / IT COPY
+# V3.5.4 — COMPLETE HIGH-VISIBILITY DE / IT COPY
 # ============================================================
 _HORG_EXACT_DE.update({
     "Plasma Mobility Research Simulator": "Plasma-Mobilitäts-Forschungssimulator",
@@ -847,7 +847,42 @@ def _horg_translate_help(kwargs):
     return kwargs
 
 
-# Preserve original Streamlit functions before replacing presentation wrappers.
+# Preserve ORIGINAL Streamlit callables across Streamlit reruns.
+# Streamlit reruns this script in the same Python process when a widget changes.
+# V3.5.4 wrapped already-wrapped functions on every rerun, producing recursive
+# calls (most visibly in st.selectbox). V3.5.4 always unwraps back to the real
+# Streamlit callable before installing one fresh presentation wrapper.
+def _horg_unwrap_callable(fn):
+    """Recover the underlying Streamlit callable from earlier Horg wrappers."""
+    seen = set()
+    cur = fn
+    while callable(cur) and id(cur) not in seen:
+        seen.add(id(cur))
+
+        # V3.5.4 wrappers expose their original explicitly.
+        direct = getattr(cur, "_horg_original", None)
+        if callable(direct) and direct is not cur:
+            cur = direct
+            continue
+
+        # Recover V3.5.2/V3.5.4 closure-based wrappers.
+        code = getattr(cur, "__code__", None)
+        closure = getattr(cur, "__closure__", None)
+        if code is not None and closure:
+            freevars = list(code.co_freevars)
+            if "original" in freevars:
+                try:
+                    candidate = closure[freevars.index("original")].cell_contents
+                except Exception:
+                    candidate = None
+                if callable(candidate) and candidate is not cur:
+                    cur = candidate
+                    continue
+
+        break
+    return cur
+
+
 _horg_orig = {}
 for _name in (
     "header", "subheader", "title", "caption", "markdown", "info", "warning",
@@ -858,7 +893,17 @@ for _name in (
     "area_chart",
 ):
     if hasattr(st, _name):
-        _horg_orig[_name] = getattr(st, _name)
+        _horg_orig[_name] = _horg_unwrap_callable(getattr(st, _name))
+
+
+def _horg_mark_wrapper(wrapper, original):
+    # Explicit marker makes future reruns deterministic and O(1) to unwrap.
+    try:
+        wrapper._horg_original = original
+        wrapper._horg_translation_wrapper = True
+    except Exception:
+        pass
+    return wrapper
 
 
 def _horg_simple_text_wrapper(name):
@@ -871,7 +916,8 @@ def _horg_simple_text_wrapper(name):
             args = [_horg_translate_text(x) if isinstance(x, str) else x for x in args]
         _horg_translate_help(kwargs)
         return original(*args, **kwargs)
-    return wrapped
+    return _horg_mark_wrapper(wrapped, original)
+
 
 for _name in ("header", "subheader", "title", "caption", "markdown", "info", "warning", "error", "success", "text", "write"):
     if _name in _horg_orig:
@@ -883,7 +929,8 @@ def _horg_label_wrapper(name):
     def wrapped(label, *args, **kwargs):
         _horg_translate_help(kwargs)
         return original(_horg_translate_text(label), *args, **kwargs)
-    return wrapped
+    return _horg_mark_wrapper(wrapped, original)
+
 
 for _name in ("button", "download_button", "link_button", "checkbox", "toggle", "slider", "number_input", "text_input", "text_area", "expander", "spinner"):
     if _name in _horg_orig:
@@ -900,31 +947,60 @@ def _horg_choice_wrapper(name):
         kwargs["format_func"] = display
         _horg_translate_help(kwargs)
         return original(_horg_translate_text(label), options, *args, **kwargs)
-    return wrapped
+    return _horg_mark_wrapper(wrapped, original)
+
 
 for _name in ("selectbox", "radio", "multiselect", "select_slider"):
     if _name in _horg_orig:
         setattr(st, _name, _horg_choice_wrapper(_name))
 
+
 if "tabs" in _horg_orig:
+    _horg_tabs_original = _horg_orig["tabs"]
     def _horg_tabs(labels, *args, **kwargs):
-        return _horg_orig["tabs"]([_horg_translate_text(x) for x in labels], *args, **kwargs)
-    st.tabs = _horg_tabs
+        return _horg_tabs_original([_horg_translate_text(x) for x in labels], *args, **kwargs)
+    st.tabs = _horg_mark_wrapper(_horg_tabs, _horg_tabs_original)
+
 
 if "metric" in _horg_orig:
+    _horg_metric_original = _horg_orig["metric"]
     def _horg_metric(label, value, delta=None, *args, **kwargs):
         _horg_translate_help(kwargs)
-        return _horg_orig["metric"](_horg_translate_text(label), value, delta, *args, **kwargs)
-    st.metric = _horg_metric
+        return _horg_metric_original(_horg_translate_text(label), value, delta, *args, **kwargs)
+    st.metric = _horg_mark_wrapper(_horg_metric, _horg_metric_original)
+
 
 # Metric calls made directly on st.columns() objects are translated too.
+# This patch is also rerun-safe: it peels back earlier Horg metric wrappers.
 try:
     from streamlit.delta_generator import DeltaGenerator as _HorgDeltaGenerator
-    _horg_orig_dg_metric = _HorgDeltaGenerator.metric
+
+    def _horg_unwrap_dg_metric(fn):
+        seen = set()
+        cur = fn
+        while callable(cur) and id(cur) not in seen:
+            seen.add(id(cur))
+            direct = getattr(cur, "_horg_original", None)
+            if callable(direct) and direct is not cur:
+                cur = direct
+                continue
+            # Recover the old V3.5.2/V3.5.4 global-reference wrapper chain.
+            if getattr(cur, "__name__", "") == "_horg_dg_metric":
+                previous = getattr(cur, "__globals__", {}).get("_horg_orig_dg_metric")
+                if callable(previous) and previous is not cur:
+                    cur = previous
+                    continue
+            break
+        return cur
+
+    _horg_orig_dg_metric = _horg_unwrap_dg_metric(_HorgDeltaGenerator.metric)
+
     def _horg_dg_metric(self, label, value, delta=None, *args, **kwargs):
         if isinstance(kwargs.get("help"), str):
             kwargs["help"] = _horg_translate_text(kwargs["help"])
         return _horg_orig_dg_metric(self, _horg_translate_text(label), value, delta, *args, **kwargs)
+
+    _horg_mark_wrapper(_horg_dg_metric, _horg_orig_dg_metric)
     _HorgDeltaGenerator.metric = _horg_dg_metric
 except Exception:
     pass
@@ -953,13 +1029,14 @@ def _horg_localize_frame(data):
         return data
     return data
 
+
 for _name in ("dataframe", "table", "line_chart", "bar_chart", "area_chart"):
     if _name in _horg_orig:
         _original = _horg_orig[_name]
         def _make_data_wrapper(original):
             def wrapped(data=None, *args, **kwargs):
                 return original(_horg_localize_frame(data), *args, **kwargs)
-            return wrapped
+            return _horg_mark_wrapper(wrapped, original)
         setattr(st, _name, _make_data_wrapper(_original))
 
 
@@ -1057,7 +1134,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.5.3 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.5.4 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -1138,7 +1215,7 @@ def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_ra
 
 
 # ============================================================
-# V3.5.3 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
+# V3.5.4 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
 # Synthetic monthly representative days, not measured PVGIS weather.
 # Financial outputs must not be mistaken for validated plant LCOH.
 # ============================================================
@@ -1394,7 +1471,7 @@ def rail_v337_evaluate(area_site_m2, technology, with_geothermal, battery_active
 
 
 # ============================================================
-# V3.5.3 — TARGET-COST SEARCH ENGINE
+# V3.5.4 — TARGET-COST SEARCH ENGINE
 # Finds transparent combinations that can meet a user target without hiding
 # assumptions inside sale revenues. The target is always GROSS rail H2 LCOH.
 # ============================================================
@@ -1579,7 +1656,7 @@ def rail_v340_target_search(base_config, technology, target_chfkg,
 
 
 # ============================================================
-# V3.5.3 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
+# V3.5.4 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
 # Evaluates all requested gross rail-H2 cost targets in one pass so that
 # expensive seasonal dispatch evaluations are reused rather than repeated.
 # No export or H2-sale revenue is credited to gross production cost.
@@ -1839,7 +1916,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.5.3: compact in-page navigation and readable chart areas. */
+    /* V3.5.4: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -1855,7 +1932,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.3</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.4</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -1876,7 +1953,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.5.3: compact section navigation. Internal anchors do not change model state.
+# V3.5.4: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -1986,12 +2063,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.5.3: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.5.4: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.5.3, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.5.4, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -2815,7 +2892,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.5.3 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
+    with st.expander("V3.5.4 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -4376,10 +4453,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.5.3: Always-visible charts and compact navigation; physics unchanged.
+# V3.5.4: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.5.3")
+st.subheader("Research graphics dashboard · V3.5.4")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -6010,7 +6087,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.5.3 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.5.4 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -6251,11 +6328,11 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.5.3 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.5.4 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.3)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.4)")
 st.caption(
     "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
     "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
@@ -6602,7 +6679,7 @@ st.download_button(
 )
 
 # ============================================================
-# V3.5.3 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# V3.5.4 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
 # No fictitious production gains or free renewable energy are assumed.
 # ============================================================
 st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
@@ -6741,7 +6818,7 @@ else:
     st.warning('Enter all necessary investment and operating costs before testing utilisation.')
 
 # ============================================================
-# 12D — V3.5.3 FULL-YEAR PV SITE AREA OPTIMIZATION
+# 12D — V3.5.4 FULL-YEAR PV SITE AREA OPTIMIZATION
 # ============================================================
 st.markdown('##### 12D · PV surface optimizer — full-year solar, seasonal dispatch and excess output')
 st.caption(
@@ -6749,7 +6826,7 @@ st.caption(
     'include winter/summer daylight, PV production on all 365 days and independent rail operating days. '
     'No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.'
 )
-with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.3', expanded=True):
+with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.4', expanded=True):
     r37_a, r37_b, r37_c = st.columns(3)
     with r37_a:
         r37_irradiation = st.number_input('Annual irradiation proxy (kWh/kWp/year BEFORE performance ratio)', 500.0, 2100.0, 1250.0, 50.0, key='r37_irr')
@@ -6925,16 +7002,16 @@ else:
 
 
 # ============================================================
-# 12E — V3.5.3 CHF 9.90 TARGET FINDER
+# 12E — V3.5.4 CHF 9.90 TARGET FINDER
 # ============================================================
-st.markdown('##### 12E · V3.5.3 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
+st.markdown('##### 12E · V3.5.4 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
 st.caption(
     'This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to '
     'make production cost look lower. It searches transparent combinations of solar area, grid purchase price, '
     'operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening '
     'scenario, not a supplier quote or market forecast.'
 )
-with st.expander('V3.5.3 single-target search limits and assumptions', expanded=True):
+with st.expander('V3.5.4 single-target search limits and assumptions', expanded=True):
     v340_a, v340_b, v340_c = st.columns(3)
     with v340_a:
         v340_target = st.number_input('Target gross rail H₂ cost (CHF/kg)', 1.0, 100.0, 9.90, 0.10, key='v340_target')
@@ -6966,7 +7043,7 @@ with st.expander('V3.5.3 single-target search limits and assumptions', expanded=
             st.caption('Financing rate is already 0%; no lower financing scenario exists.')
         v340_steps = st.select_slider('Economic search resolution', options=[3, 4, 5], value=4, key='v340_steps')
 
-    if st.button('Run V3.5.3 single-target search', type='primary', key='v340_run'):
+    if st.button('Run V3.5.4 single-target search', type='primary', key='v340_run'):
         with st.spinner('Searching transparent PV-only scenarios...'):
             v340_target_result, v340_absolute_result, v340_tested = rail_v340_target_search(
                 r37_config, v340_technology, v340_target,
@@ -7038,12 +7115,12 @@ if _v340_saved:
             f"{100*_v340_hit['Financing rate']:.1f}%."
         )
         st.caption(
-            'The V3.5.3 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
+            'The V3.5.4 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
             'confidence level or market forecast. The target search uses gross rail production cost, so export/sales revenue '
             'cannot create an artificial sub-CHF-9.90 result.'
         )
         st.download_button(
-            'Download V3.5.3 target scenario (CSV)',
+            'Download V3.5.4 target scenario (CSV)',
             v340_table.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_target_v351.csv', mime='text/csv', key='v340_download',
         )
@@ -7053,22 +7130,22 @@ if _v340_saved:
             f"**CHF {_v340_abs['Gross rail LCOH CHF/kg']:,.2f}/kg** after {_v340_tested:,} search points. "
             'Widen only assumptions you can technically or commercially justify.'
         )
-    st.caption(f'V3.5.3 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
+    st.caption(f'V3.5.4 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
 
 
 
 # ============================================================
-# 12F — V3.5.3 MULTI-TARGET ECONOMIC FRONTIER
+# 12F — V3.5.4 MULTI-TARGET ECONOMIC FRONTIER
 # ============================================================
 st.markdown('<span id="horg-frontier" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown('##### 12F · V3.5.3 economic frontier — required conditions for CHF/kg targets')
+st.markdown('##### 12F · V3.5.4 economic frontier — required conditions for CHF/kg targets')
 st.caption(
     'Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. '
     'The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. '
     'REACHED means only that the target is mathematically reachable inside the declared screening bounds.'
 )
 
-with st.expander('V3.5.3 frontier targets and shared limits', expanded=True):
+with st.expander('V3.5.4 frontier targets and shared limits', expanded=True):
     v351_targets = st.multiselect(
         'Gross rail H₂ frontier targets (CHF/kg)',
         options=[10.0, 9.9, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0],
@@ -7082,7 +7159,7 @@ with st.expander('V3.5.3 frontier targets and shared limits', expanded=True):
         f"reactor CAPEX ≥ {v340_reactor_floor_pct:.0f}% of current; PV CAPEX ≥ {v340_pv_floor_pct:.0f}% of current; "
         f"financing ≥ {v340_fin_floor_pct:.1f}%."
     )
-    if st.button('Run V3.5.3 economic frontier', type='primary', key='v351_run'):
+    if st.button('Run V3.5.4 economic frontier', type='primary', key='v351_run'):
         if not v351_targets:
             st.warning('Select at least one CHF/kg frontier target.')
         else:
@@ -7199,13 +7276,13 @@ if _v351_saved:
         )
 
         st.download_button(
-            'Download V3.5.3 economic frontier (CSV)',
+            'Download V3.5.4 economic frontier (CSV)',
             _v351_df.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_economic_frontier_v351.csv',
             mime='text/csv', key='v351_download',
         )
         st.caption(
-            f"V3.5.3 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
+            f"V3.5.4 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
             'so the multi-target frontier is materially faster than running four independent searches. '
             'Total modeled installed CAPEX is the sum of assets represented in this simulator only; it excludes '
             'unmodelled permitting, distribution, taxes, financing fees and other project-specific infrastructure.'
@@ -7735,4 +7812,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.5.3 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.5.4 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
