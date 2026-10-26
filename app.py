@@ -11,7 +11,7 @@ st.set_page_config(
 
 
 # ============================================================
-# V3.5.5 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
+# V3.5.6 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
 # ============================================================
 # The simulator keeps English strings as the internal model vocabulary so
 # scenario logic, comparisons and CSV calculations are not changed by language.
@@ -369,14 +369,14 @@ _HORG_PHRASES_DE = {
     "Lowest PV CAPEX/kWp allowed": "Niedrigste zulässige PV-CAPEX/kWp",
     "Lowest real financing rate allowed": "Niedrigster zulässiger realer Finanzierungssatz",
     "Economic search resolution": "Auflösung der Wirtschaftlichkeitssuche",
-    "Run V3.5.5 single-target search": "V3.5.5 Einzelzielsuche starten",
-    "Download V3.5.5 target scenario": "V3.5.5 Zielszenario herunterladen",
+    "Run V3.5.6 single-target search": "V3.5.6 Einzelzielsuche starten",
+    "Download V3.5.6 target scenario": "V3.5.6 Zielszenario herunterladen",
     "economic frontier": "Wirtschaftlichkeitsgrenze",
     "required conditions for CHF/kg targets": "erforderliche Bedingungen für CHF/kg-Ziele",
     "frontier targets and shared limits": "Grenzziele und gemeinsame Limits",
     "Gross rail H₂ frontier targets": "Brutto-Bahn-H₂-Ziele der Wirtschaftlichkeitsgrenze",
-    "Run V3.5.5 economic frontier": "V3.5.5 Wirtschaftlichkeitsgrenze berechnen",
-    "Download V3.5.5 economic frontier": "V3.5.5 Wirtschaftlichkeitsgrenze herunterladen",
+    "Run V3.5.6 economic frontier": "V3.5.6 Wirtschaftlichkeitsgrenze berechnen",
+    "Download V3.5.6 economic frontier": "V3.5.6 Wirtschaftlichkeitsgrenze herunterladen",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Separaten HydrogenOrg Hybrid Energy Simulator öffnen",
     "Rail public references and model equations": "Öffentliche Bahnquellen und Modellgleichungen",
     "Full scientific comparison, automotive hypotheses and references": "Vollständiger wissenschaftlicher Vergleich, Automotive-Hypothesen und Quellen",
@@ -688,14 +688,14 @@ _HORG_PHRASES_IT = {
     "Lowest PV CAPEX/kWp allowed": "CAPEX PV/kWp minimo consentito",
     "Lowest real financing rate allowed": "Tasso reale minimo di finanziamento consentito",
     "Economic search resolution": "Risoluzione della ricerca economica",
-    "Run V3.5.5 single-target search": "Avvia ricerca V3.5.5 obiettivo singolo",
-    "Download V3.5.5 target scenario": "Scarica scenario obiettivo V3.5.5",
+    "Run V3.5.6 single-target search": "Avvia ricerca V3.5.6 obiettivo singolo",
+    "Download V3.5.6 target scenario": "Scarica scenario obiettivo V3.5.6",
     "economic frontier": "frontiera economica",
     "required conditions for CHF/kg targets": "condizioni richieste per gli obiettivi CHF/kg",
     "frontier targets and shared limits": "obiettivi di frontiera e limiti condivisi",
     "Gross rail H₂ frontier targets": "Obiettivi di frontiera del costo lordo H₂ ferroviario",
-    "Run V3.5.5 economic frontier": "Calcola frontiera economica V3.5.5",
-    "Download V3.5.5 economic frontier": "Scarica frontiera economica V3.5.5",
+    "Run V3.5.6 economic frontier": "Calcola frontiera economica V3.5.6",
+    "Download V3.5.6 economic frontier": "Scarica frontiera economica V3.5.6",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Apri il simulatore HydrogenOrg Hybrid Energy separato",
     "Rail public references and model equations": "Riferimenti ferroviari pubblici ed equazioni del modello",
     "Full scientific comparison, automotive hypotheses and references": "Confronto scientifico completo, ipotesi automotive e riferimenti",
@@ -740,7 +740,7 @@ _HORG_PHRASES_IT = {
 
 
 # ============================================================
-# V3.5.5 — COMPLETE HIGH-VISIBILITY DE / IT COPY
+# V3.5.6 — COMPLETE HIGH-VISIBILITY DE / IT COPY
 # ============================================================
 _HORG_EXACT_DE.update({
     "Plasma Mobility Research Simulator": "Plasma-Mobilitäts-Forschungssimulator",
@@ -824,6 +824,90 @@ _HORG_EXACT_IT.update({
     "References": "Riferimenti",
 })
 
+
+# ============================================================
+# V3.5.6 — COMPLETE-SENTENCE TRANSLATIONS FOR LONG PROSE
+# Long technical prose is translated as complete sentences/fragments to avoid
+# hybrid text such as "Batteria and H2 plant...". Internal model values remain
+# English and unchanged.
+# ============================================================
+_HORG_EXACT_DE.update({
+    "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. Every plant includes its own annualized CAPEX and OPEX. Grid backup is permitted in all cases. This is a screening model, not a site-specific energy or investment forecast.":
+        "Sechs unabhängige Szenarien bedienen denselben täglichen Bahn-H₂-Bedarf: PV ohne Batterie, PV mit Batterie sowie PV + Geothermie mit Batterie; jeweils für HPRS-W und PEM. Jede Anlage enthält ihre eigene annualisierte CAPEX und OPEX. Netzbezug als Reserve ist in allen Fällen zulässig. Dies ist ein Screening-Modell und keine standortspezifische Energie- oder Investitionsprognose.",
+    "PV without battery, PV + battery, and PV + geothermal + battery are independently evaluated. Grid backup is permitted and charged. Every scenario serves the same modeled H₂ demand; no battery CAPEX/OPEX is charged to the PV-only case.":
+        "PV ohne Batterie, PV + Batterie sowie PV + Geothermie + Batterie werden unabhängig bewertet. Netzbezug ist zulässig und wird berechnet. Jedes Szenario deckt denselben modellierten H₂-Bedarf; dem reinen PV-Fall werden keine Batterie-CAPEX/OPEX zugerechnet.",
+    "Cash CAPEX is allocated once, annualized through a real capital recovery factor, and maintenance is charged separately. Straight-line depreciation is INFORMATION only. The six production plants are independent alternatives serving the same rail H₂ demand.":
+        "Die zahlungswirksame CAPEX wird einmal zugeordnet, über einen realen Kapitalrückgewinnungsfaktor annualisiert und die Wartung separat berechnet. Die lineare Abschreibung dient NUR ZUR INFORMATION. Die sechs Produktionsanlagen sind unabhängige Alternativen für denselben Bahn-H₂-Bedarf.",
+    "The target test preserves daily production capacity, current plant sizing, fixed CAPEX and maintenance. It varies operating days/year ONLY. The assumed representative hourly PV profile and grid backup do not guarantee real-world availability.":
+        "Der Zieltest hält tägliche Produktionskapazität, aktuelle Anlagengröße, feste CAPEX und Wartung konstant. Variiert werden NUR die Betriebstage pro Jahr. Das angenommene repräsentative stündliche PV-Profil und die Netzreserve garantieren keine reale Verfügbarkeit.",
+    "Capital gap is the required reduction in ANNUALIZED capital cost at the current H₂ output, holding fixed OPEX constant. It is not automatically an achievable reduction in equipment size, and does not credit any additional energy or hydrogen production.":
+        "Die Kapitallücke ist die erforderliche Senkung der ANNUALISIERTEN Kapitalkosten bei der aktuellen H₂-Produktion und unveränderter fixer OPEX. Sie entspricht nicht automatisch einer realisierbaren Verringerung der Anlagengröße und berücksichtigt keine zusätzliche Energie- oder Wasserstoffproduktion.",
+    "Find the lowest modeled CHF/kg and its site area in m². Synthetic 12-month representative days include winter/summer daylight, PV production on all 365 days and independent rail operating days. No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.":
+        "Ermittelt werden die niedrigsten modellierten CHF/kg und die zugehörige Standortfläche in m². Synthetische repräsentative Tage über 12 Monate berücksichtigen Winter-/Sommer-Tageslicht, PV-Produktion an allen 365 Tagen und unabhängige Bahn-Betriebstage. Es wird weder ein stündlicher PVGIS-Datensatz noch eine bankfähige Wetterprognose oder verifizierte Hardwareeffizienz beansprucht.",
+    "This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to make production cost look lower. It searches transparent combinations of solar area, grid purchase price, operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening scenario, not a supplier quote or market forecast.":
+        "Dieser Abschnitt erzwingt KEIN Ergebnis unterhalb des Zielwerts und verwendet KEINE Export- oder H₂-Verkaufserlöse, um die Produktionskosten künstlich zu senken. Er durchsucht transparente Kombinationen aus Solarfläche, Netzbezugspreis, Auslastung, Prozessstrom, Finanzierung und CAPEX. Ein Zielergebnis ist ein bedingtes Screening-Szenario und weder ein Lieferantenangebot noch eine Marktprognose.",
+    "Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. REACHED means only that the target is mathematically reachable inside the declared screening bounds.":
+        "Mehrere Zielwerte für die Bruttokosten von Bahn-H₂ werden in EINER optimierten Suche mit denselben in 12E gewählten Grenzen berechnet. Die Grenzkurve verwendet weder Exporterlöse noch H₂-Verkaufserlöse, Geothermie oder Batterien, um künstlich niedrige Kosten zu erzeugen. REACHED bedeutet ausschließlich, dass das Ziel innerhalb der angegebenen Screening-Grenzen mathematisch erreichbar ist.",
+    "Critical modelling limits: 365 operating days is not a verified PV/plant availability estimate. Annual production, demand, grid capacity, curtailment, winter solar irradiation, battery cycling, future battery replacement, permits, site-specific geothermal drilling and safety are NOT proven. Section 12D provides a synthetic 12-month sensitivity, NOT an actual solar-year dataset. Zero geothermal costs and zero hydrogen-plant CAPEX invalidate an investment comparison. A target below CHF 10/kg must be DEMONSTRATED by validated technology and site data, not assumed.":
+        "Kritische Modellgrenzen: 365 Betriebstage sind keine verifizierte Schätzung der PV-/Anlagenverfügbarkeit. Jahresproduktion, Nachfrage, Netzkapazität, Abregelung, winterliche Sonneneinstrahlung, Batteriezyklen, künftiger Batteriewechsel, Genehmigungen, standortspezifische Geothermiebohrungen und Sicherheit sind NICHT nachgewiesen. Abschnitt 12D zeigt eine synthetische 12-Monats-Sensitivität und KEIN reales Solarjahres-Dataset. Nullkosten für Geothermie oder null CAPEX der Wasserstoffanlage machen einen Investitionsvergleich ungültig. Ein Ziel unter CHF 10/kg muss durch validierte Technologie- und Standortdaten NACHGEWIESEN und darf nicht vorausgesetzt werden.",
+    "Methodological boundaries: Geothermal V4.0 uses a simplified lumped heat-to-power model. Sections 12–12C use a repeated representative day; 12D adds synthetic monthly daylight and solar-yield weights, NOT a Swiss hourly weather dataset. Grid back-up is permitted. HPRS-W plasma consumption/recovery are unvalidated experimental inputs. In owned-asset mode, PV and geothermal electricity already carry their amortization and maintenance, so the renewable internal transfer price is NOT added. Under a renewable-energy supply contract, PV/geo CAPEX and geo OPEX are excluded, replaced by an editable electricity/heat transfer price. Battery and H₂ plant are owned in both cases. Cost analysis excludes project taxes, replacement overhauls, land/permits, financing fees, hydrogen storage/distribution infrastructure and detailed plant degradation. Zero allocated geothermal capital/maintenance makes the owned hybrid comparison incomplete. PV without batteries is compared explicitly (grid backup allowed). PV with batteries and PV + geothermal carry separate asset annualization.":
+        "Methodische Grenzen: Geothermie V4.0 verwendet ein vereinfachtes konzentriertes Wärme-zu-Strom-Modell. Die Abschnitte 12–12C verwenden einen wiederholten repräsentativen Tag; 12D ergänzt synthetische monatliche Tageslicht- und Solarertragsgewichte und KEINEN schweizerischen stündlichen Wetterdatensatz. Netzreserve ist zulässig. HPRS-W-Plasmaverbrauch und -Rückgewinnung sind nicht validierte experimentelle Eingaben. Im Modus mit eigenen Anlagen enthalten PV- und Geothermiestrom bereits Amortisation und Wartung; deshalb wird kein interner Transferpreis für erneuerbare Energie zusätzlich angesetzt. Bei einem Liefervertrag für erneuerbare Energie werden PV-/Geothermie-CAPEX und Geothermie-OPEX ausgeschlossen und durch einen editierbaren Strom-/Wärme-Transferpreis ersetzt. Batterie und H₂-Anlage befinden sich in beiden Fällen im Eigentum. Die Kostenanalyse schließt Projektsteuern, Ersatzüberholungen, Grundstück/Genehmigungen, Finanzierungsgebühren, H₂-Speicher-/Verteilinfrastruktur und detaillierte Anlagenalterung aus. Null zugeordnetes Geothermie-Kapital bzw. null Wartung macht den Vergleich der eigenen Hybridanlage unvollständig. PV ohne Batterie wird ausdrücklich verglichen (Netzreserve zulässig). PV mit Batterie sowie PV + Geothermie tragen eine getrennte Anlagenannualisierung.",
+    "Rail model boundary:": "Grenzen des Bahnmodells:",
+    "this is not a longitudinal train-dynamics, timetable or homologation model.": "Dies ist kein longitudinales Zugdynamik-, Fahrplan- oder Zulassungsmodell.",
+    "It uses simple rolling and aerodynamic resistance,": "Es verwendet vereinfachten Roll- und Luftwiderstand,",
+    "an equivalent positive elevation gain, repeated acceleration/braking cycles, an average auxiliary load and user-selected drivetrain efficiencies.":
+        "einen äquivalenten positiven Höhengewinn, wiederholte Beschleunigungs-/Bremszyklen, eine mittlere Hilfslast und vom Benutzer gewählte Wirkungsgrade des Antriebsstrangs.",
+    "It does not include wheel/rail adhesion limits, detailed gradients/curves, passenger load variation, compressor losses, H2 storage thermal behavior,":
+        "Nicht enthalten sind Rad-Schiene-Haftungsgrenzen, detaillierte Steigungen/Kurven, Schwankungen der Fahrgastlast, Kompressorverluste und das thermische Verhalten des H₂-Speichers,",
+    "fuel-cell degradation, battery SOC control, HVAC transients, redundancy, fire safety, crash requirements, capital cost or maintenance.":
+        "Brennstoffzellenalterung, Batterie-SOC-Regelung, HVAC-Transienten, Redundanz, Brandschutz, Crash-Anforderungen, Kapitalkosten oder Wartung.",
+    "Public Stadler values are contextual guideposts only. A partner study should replace the scenario inputs with route and PowerPack data supplied by the rail OEM.":
+        "Öffentliche Stadler-Werte dienen nur als kontextuelle Orientierung. In einer Partnerstudie sollten die Szenarioeingaben durch Strecken- und PowerPack-Daten des Bahnherstellers ersetzt werden.",
+    "Public FLIRT H2 guideposts": "Öffentliche FLIRT-H2-Orientierungswerte",
+    "Fuel-cell efficiency context": "Kontext zum Brennstoffzellen-Wirkungsgrad",
+    "First-order equations": "Gleichungen erster Ordnung",
+    "All four pathways below are normalized to the same useful mechanical output:": "Alle vier nachstehenden Pfade werden auf dieselbe nutzbare mechanische Leistung normiert:",
+})
+
+_HORG_EXACT_IT.update({
+    "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. Every plant includes its own annualized CAPEX and OPEX. Grid backup is permitted in all cases. This is a screening model, not a site-specific energy or investment forecast.":
+        "Sei scenari indipendenti soddisfano lo STESSO fabbisogno giornaliero di H₂ ferroviario: PV senza batteria, PV con batteria e PV + geotermia con batteria; ciascuno valutato per HPRS-W e PEM. Ogni impianto include i propri CAPEX e OPEX annualizzati. Il supporto della rete è consentito in tutti i casi. È un modello di screening, non una previsione energetica o d’investimento specifica per il sito.",
+    "PV without battery, PV + battery, and PV + geothermal + battery are independently evaluated. Grid backup is permitted and charged. Every scenario serves the same modeled H₂ demand; no battery CAPEX/OPEX is charged to the PV-only case.":
+        "PV senza batteria, PV + batteria e PV + geotermia + batteria sono valutati in modo indipendente. Il supporto della rete è consentito e contabilizzato. Ogni scenario soddisfa lo stesso fabbisogno di H₂ modellato; al caso solo PV non vengono attribuiti CAPEX/OPEX della batteria.",
+    "Cash CAPEX is allocated once, annualized through a real capital recovery factor, and maintenance is charged separately. Straight-line depreciation is INFORMATION only. The six production plants are independent alternatives serving the same rail H₂ demand.":
+        "Il CAPEX monetario viene attribuito una sola volta, annualizzato mediante un fattore reale di recupero del capitale, mentre la manutenzione viene contabilizzata separatamente. L’ammortamento lineare è SOLO INFORMATIVO. I sei impianti di produzione sono alternative indipendenti che soddisfano lo stesso fabbisogno ferroviario di H₂.",
+    "The target test preserves daily production capacity, current plant sizing, fixed CAPEX and maintenance. It varies operating days/year ONLY. The assumed representative hourly PV profile and grid backup do not guarantee real-world availability.":
+        "Il test dell’obiettivo mantiene invariati capacità produttiva giornaliera, dimensionamento attuale dell’impianto, CAPEX fisso e manutenzione. Varia SOLO i giorni operativi/anno. Il profilo PV orario rappresentativo assunto e il supporto della rete non garantiscono la disponibilità reale.",
+    "Capital gap is the required reduction in ANNUALIZED capital cost at the current H₂ output, holding fixed OPEX constant. It is not automatically an achievable reduction in equipment size, and does not credit any additional energy or hydrogen production.":
+        "Il divario di capitale è la riduzione richiesta del costo di capitale ANNUALIZZATO all’attuale produzione di H₂, mantenendo costante l’OPEX fisso. Non equivale automaticamente a una riduzione realizzabile della dimensione delle apparecchiature e non accredita energia o produzione di idrogeno aggiuntive.",
+    "Find the lowest modeled CHF/kg and its site area in m². Synthetic 12-month representative days include winter/summer daylight, PV production on all 365 days and independent rail operating days. No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.":
+        "Trova il valore modellato più basso in CHF/kg e la relativa superficie del sito in m². I giorni rappresentativi sintetici su 12 mesi includono luce invernale/estiva, produzione PV per tutti i 365 giorni e giorni operativi ferroviari indipendenti. Non si pretende di utilizzare un dataset orario PVGIS, una previsione meteo bancabile o un’efficienza hardware verificata.",
+    "This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to make production cost look lower. It searches transparent combinations of solar area, grid purchase price, operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening scenario, not a supplier quote or market forecast.":
+        "Questa sezione NON forza un risultato inferiore all’obiettivo e NON utilizza ricavi da esportazione o vendita di H₂ per far apparire più basso il costo di produzione. Cerca combinazioni trasparenti di superficie solare, prezzo di acquisto dalla rete, utilizzo operativo, elettricità di processo, finanziamento e CAPEX. Un risultato-obiettivo è uno scenario condizionale di screening, non un’offerta di un fornitore né una previsione di mercato.",
+    "Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. REACHED means only that the target is mathematically reachable inside the declared screening bounds.":
+        "Esegue diversi obiettivi di costo lordo dell’H₂ ferroviario in UNA sola ricerca ottimizzata usando gli stessi limiti selezionati nella 12E. La frontiera non usa ricavi da esportazione, ricavi da vendita di H₂, geotermia o batterie per costruire artificialmente un costo basso. REACHED significa soltanto che l’obiettivo è matematicamente raggiungibile entro i limiti di screening dichiarati.",
+    "Critical modelling limits: 365 operating days is not a verified PV/plant availability estimate. Annual production, demand, grid capacity, curtailment, winter solar irradiation, battery cycling, future battery replacement, permits, site-specific geothermal drilling and safety are NOT proven. Section 12D provides a synthetic 12-month sensitivity, NOT an actual solar-year dataset. Zero geothermal costs and zero hydrogen-plant CAPEX invalidate an investment comparison. A target below CHF 10/kg must be DEMONSTRATED by validated technology and site data, not assumed.":
+        "Limiti critici del modello: 365 giorni operativi non costituiscono una stima verificata della disponibilità PV/impianto. Produzione annuale, domanda, capacità di rete, curtailment, irraggiamento solare invernale, cicli della batteria, futura sostituzione della batteria, permessi, perforazioni geotermiche specifiche del sito e sicurezza NON sono dimostrati. La sezione 12D fornisce una sensibilità sintetica su 12 mesi e NON un vero dataset di un anno solare. Costi geotermici nulli e CAPEX nullo dell’impianto a idrogeno invalidano il confronto d’investimento. Un obiettivo inferiore a CHF 10/kg deve essere DIMOSTRATO con tecnologia e dati di sito validati, non presunto.",
+    "Methodological boundaries: Geothermal V4.0 uses a simplified lumped heat-to-power model. Sections 12–12C use a repeated representative day; 12D adds synthetic monthly daylight and solar-yield weights, NOT a Swiss hourly weather dataset. Grid back-up is permitted. HPRS-W plasma consumption/recovery are unvalidated experimental inputs. In owned-asset mode, PV and geothermal electricity already carry their amortization and maintenance, so the renewable internal transfer price is NOT added. Under a renewable-energy supply contract, PV/geo CAPEX and geo OPEX are excluded, replaced by an editable electricity/heat transfer price. Battery and H₂ plant are owned in both cases. Cost analysis excludes project taxes, replacement overhauls, land/permits, financing fees, hydrogen storage/distribution infrastructure and detailed plant degradation. Zero allocated geothermal capital/maintenance makes the owned hybrid comparison incomplete. PV without batteries is compared explicitly (grid backup allowed). PV with batteries and PV + geothermal carry separate asset annualization.":
+        "Limiti metodologici: Geothermal V4.0 usa un modello semplificato concentrato di conversione calore-elettricità. Le sezioni 12–12C usano un giorno rappresentativo ripetuto; la 12D aggiunge pesi sintetici mensili per luce diurna e resa solare, NON un dataset meteorologico orario svizzero. Il supporto della rete è consentito. Consumo e recupero del plasma HPRS-W sono input sperimentali non validati. In modalità asset di proprietà, l’elettricità PV e geotermica incorpora già ammortamento e manutenzione, quindi il prezzo interno di trasferimento dell’energia rinnovabile NON viene aggiunto. Con un contratto di fornitura di energia rinnovabile, CAPEX PV/geotermia e OPEX geotermico sono esclusi e sostituiti da un prezzo di trasferimento editabile per elettricità/calore. Batteria e impianto H₂ sono di proprietà in entrambi i casi. L’analisi dei costi esclude imposte di progetto, revisioni/sostituzioni, terreno/permessi, oneri finanziari, infrastrutture di stoccaggio/distribuzione dell’idrogeno e degrado dettagliato dell’impianto. Capitale/manutenzione geotermici attribuiti pari a zero rendono incompleto il confronto dell’ibrido di proprietà. Il PV senza batteria viene confrontato esplicitamente (supporto di rete consentito). PV con batteria e PV + geotermia hanno annualizzazioni separate degli asset.",
+    "Rail model boundary:": "Limiti del modello ferroviario:",
+    "this is not a longitudinal train-dynamics, timetable or homologation model.": "questo non è un modello longitudinale di dinamica del treno, orario o omologazione.",
+    "It uses simple rolling and aerodynamic resistance,": "Utilizza resistenza al rotolamento e aerodinamica semplificate,",
+    "an equivalent positive elevation gain, repeated acceleration/braking cycles, an average auxiliary load and user-selected drivetrain efficiencies.":
+        "un dislivello positivo equivalente, cicli ripetuti di accelerazione/frenata, un carico ausiliario medio ed efficienze della trasmissione selezionate dall’utente.",
+    "It does not include wheel/rail adhesion limits, detailed gradients/curves, passenger load variation, compressor losses, H2 storage thermal behavior,":
+        "Non include limiti di aderenza ruota/rotaia, pendenze/curve dettagliate, variazioni del carico passeggeri, perdite del compressore o comportamento termico dello stoccaggio H₂,",
+    "fuel-cell degradation, battery SOC control, HVAC transients, redundancy, fire safety, crash requirements, capital cost or maintenance.":
+        "degrado delle celle a combustibile, controllo SOC della batteria, transitori HVAC, ridondanza, sicurezza antincendio, requisiti di crash, costo del capitale o manutenzione.",
+    "Public Stadler values are contextual guideposts only. A partner study should replace the scenario inputs with route and PowerPack data supplied by the rail OEM.":
+        "I valori pubblici Stadler sono soltanto riferimenti contestuali. Uno studio con un partner dovrebbe sostituire gli input di scenario con dati di percorso e PowerPack forniti dall’OEM ferroviario.",
+    "Public FLIRT H2 guideposts": "Riferimenti pubblici FLIRT H2",
+    "Fuel-cell efficiency context": "Contesto dell’efficienza della cella a combustibile",
+    "First-order equations": "Equazioni di primo ordine",
+    "All four pathways below are normalized to the same useful mechanical output:": "I quattro percorsi seguenti sono normalizzati alla stessa potenza meccanica utile:",
+})
+
+
 def _horg_translate_text(value):
     if not isinstance(value, str) or _horg_lang() == "en":
         return value
@@ -833,9 +917,13 @@ def _horg_translate_text(value):
     if value in exact:
         return exact[value]
     out = value
-    # Exact full-sentence fragments can also occur inside Markdown/HTML blocks.
+    # Complete phrases/sentences are always applied first, including inside HTML.
     for en, tr in sorted(exact.items(), key=lambda kv: len(kv[0]), reverse=True):
         out = out.replace(en, tr)
+    # V3.5.6: never create bilingual prose by replacing isolated words inside
+    # long descriptions. Short UI labels may still use the compact phrase map.
+    if len(value) >= 80 or "\n" in value:
+        return out
     for en, tr in sorted(phrases.items(), key=lambda kv: len(kv[0]), reverse=True):
         out = out.replace(en, tr)
     return out
@@ -850,7 +938,7 @@ def _horg_translate_help(kwargs):
 # Preserve ORIGINAL Streamlit callables across Streamlit reruns.
 # Streamlit reruns this script in the same Python process when a widget changes.
 # Earlier multilingual builds could retain wrapped Streamlit callables across reruns.
-# V3.5.5 unwraps presentation callables defensively; choice widgets are handled
+# V3.5.6 unwraps presentation callables defensively; choice widgets are handled
 # explicitly and are never installed globally on st.
 def _horg_unwrap_callable(fn):
     """Recover the underlying Streamlit callable from earlier Horg wrappers."""
@@ -859,13 +947,13 @@ def _horg_unwrap_callable(fn):
     while callable(cur) and id(cur) not in seen:
         seen.add(id(cur))
 
-        # V3.5.5 wrappers expose their original explicitly.
+        # V3.5.6 wrappers expose their original explicitly.
         direct = getattr(cur, "_horg_original", None)
         if callable(direct) and direct is not cur:
             cur = direct
             continue
 
-        # Recover V3.5.2/V3.5.5 closure-based wrappers.
+        # Recover V3.5.2/V3.5.6 closure-based wrappers.
         code = getattr(cur, "__code__", None)
         closure = getattr(cur, "__closure__", None)
         if code is not None and closure:
@@ -937,13 +1025,19 @@ for _name in ("button", "download_button", "link_button", "checkbox", "toggle", 
         setattr(st, _name, _horg_label_wrapper(_name))
 
 
-# V3.5.5: choice widgets are deliberately NOT monkey-patched.
+# V3.5.6: choice widgets are deliberately NOT monkey-patched.
 # Streamlit Cloud may retain/rebind widget callables across script reruns, and the
 # previous global selectbox/radio wrapper could trigger a TypeError in long apps.
 # We instead use explicit helpers at each call site. They translate the widget
 # label/help while preserving the original option values and Streamlit state.
 def _horg_choice_call(name, label, options, *args, **kwargs):
     _horg_translate_help(kwargs)
+    # Translate only the displayed option text. The underlying option values
+    # stay unchanged, so model logic and comparisons continue to use English.
+    if "format_func" not in kwargs:
+        kwargs["format_func"] = (
+            lambda x: _horg_translate_text(x) if isinstance(x, str) else str(x)
+        )
     return _horg_orig[name](_horg_translate_text(label), options, *args, **kwargs)
 
 
@@ -996,7 +1090,7 @@ try:
             if callable(direct) and direct is not cur:
                 cur = direct
                 continue
-            # Recover the old V3.5.2/V3.5.5 global-reference wrapper chain.
+            # Recover the old V3.5.2/V3.5.6 global-reference wrapper chain.
             if getattr(cur, "__name__", "") == "_horg_dg_metric":
                 previous = getattr(cur, "__globals__", {}).get("_horg_orig_dg_metric")
                 if callable(previous) and previous is not cur:
@@ -1146,7 +1240,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.5.5 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.5.6 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -1227,7 +1321,7 @@ def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_ra
 
 
 # ============================================================
-# V3.5.5 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
+# V3.5.6 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
 # Synthetic monthly representative days, not measured PVGIS weather.
 # Financial outputs must not be mistaken for validated plant LCOH.
 # ============================================================
@@ -1483,7 +1577,7 @@ def rail_v337_evaluate(area_site_m2, technology, with_geothermal, battery_active
 
 
 # ============================================================
-# V3.5.5 — TARGET-COST SEARCH ENGINE
+# V3.5.6 — TARGET-COST SEARCH ENGINE
 # Finds transparent combinations that can meet a user target without hiding
 # assumptions inside sale revenues. The target is always GROSS rail H2 LCOH.
 # ============================================================
@@ -1668,7 +1762,7 @@ def rail_v340_target_search(base_config, technology, target_chfkg,
 
 
 # ============================================================
-# V3.5.5 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
+# V3.5.6 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
 # Evaluates all requested gross rail-H2 cost targets in one pass so that
 # expensive seasonal dispatch evaluations are reused rather than repeated.
 # No export or H2-sale revenue is credited to gross production cost.
@@ -1928,7 +2022,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.5.5: compact in-page navigation and readable chart areas. */
+    /* V3.5.6: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -1944,7 +2038,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.5</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.6</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -1965,7 +2059,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.5.5: compact section navigation. Internal anchors do not change model state.
+# V3.5.6: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -2075,12 +2169,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.5.5: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.5.6: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.5.5, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.5.6, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -2904,7 +2998,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.5.5 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
+    with st.expander("V3.5.6 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -4465,10 +4559,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.5.5: Always-visible charts and compact navigation; physics unchanged.
+# V3.5.6: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.5.5")
+st.subheader("Research graphics dashboard · V3.5.6")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -6099,7 +6193,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.5.5 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.5.6 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -6340,11 +6434,11 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.5.5 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.5.6 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.5)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.6)")
 st.caption(
     "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
     "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
@@ -6691,7 +6785,7 @@ st.download_button(
 )
 
 # ============================================================
-# V3.5.5 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# V3.5.6 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
 # No fictitious production gains or free renewable energy are assumed.
 # ============================================================
 st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
@@ -6830,7 +6924,7 @@ else:
     st.warning('Enter all necessary investment and operating costs before testing utilisation.')
 
 # ============================================================
-# 12D — V3.5.5 FULL-YEAR PV SITE AREA OPTIMIZATION
+# 12D — V3.5.6 FULL-YEAR PV SITE AREA OPTIMIZATION
 # ============================================================
 st.markdown('##### 12D · PV surface optimizer — full-year solar, seasonal dispatch and excess output')
 st.caption(
@@ -6838,7 +6932,7 @@ st.caption(
     'include winter/summer daylight, PV production on all 365 days and independent rail operating days. '
     'No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.'
 )
-with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.5', expanded=True):
+with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.6', expanded=True):
     r37_a, r37_b, r37_c = st.columns(3)
     with r37_a:
         r37_irradiation = st.number_input('Annual irradiation proxy (kWh/kWp/year BEFORE performance ratio)', 500.0, 2100.0, 1250.0, 50.0, key='r37_irr')
@@ -7014,16 +7108,16 @@ else:
 
 
 # ============================================================
-# 12E — V3.5.5 CHF 9.90 TARGET FINDER
+# 12E — V3.5.6 CHF 9.90 TARGET FINDER
 # ============================================================
-st.markdown('##### 12E · V3.5.5 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
+st.markdown('##### 12E · V3.5.6 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
 st.caption(
     'This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to '
     'make production cost look lower. It searches transparent combinations of solar area, grid purchase price, '
     'operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening '
     'scenario, not a supplier quote or market forecast.'
 )
-with st.expander('V3.5.5 single-target search limits and assumptions', expanded=True):
+with st.expander('V3.5.6 single-target search limits and assumptions', expanded=True):
     v340_a, v340_b, v340_c = st.columns(3)
     with v340_a:
         v340_target = st.number_input('Target gross rail H₂ cost (CHF/kg)', 1.0, 100.0, 9.90, 0.10, key='v340_target')
@@ -7055,7 +7149,7 @@ with st.expander('V3.5.5 single-target search limits and assumptions', expanded=
             st.caption('Financing rate is already 0%; no lower financing scenario exists.')
         v340_steps = _horg_select_slider('Economic search resolution', options=[3, 4, 5], value=4, key='v340_steps')
 
-    if st.button('Run V3.5.5 single-target search', type='primary', key='v340_run'):
+    if st.button('Run V3.5.6 single-target search', type='primary', key='v340_run'):
         with st.spinner('Searching transparent PV-only scenarios...'):
             v340_target_result, v340_absolute_result, v340_tested = rail_v340_target_search(
                 r37_config, v340_technology, v340_target,
@@ -7127,14 +7221,14 @@ if _v340_saved:
             f"{100*_v340_hit['Financing rate']:.1f}%."
         )
         st.caption(
-            'The V3.5.5 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
+            'The V3.5.6 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
             'confidence level or market forecast. The target search uses gross rail production cost, so export/sales revenue '
             'cannot create an artificial sub-CHF-9.90 result.'
         )
         st.download_button(
-            'Download V3.5.5 target scenario (CSV)',
+            'Download V3.5.6 target scenario (CSV)',
             v340_table.to_csv(index=False).encode('utf-8'),
-            file_name='hydrogenorg_rail_target_v351.csv', mime='text/csv', key='v340_download',
+            file_name='hydrogenorg_rail_target_v356.csv', mime='text/csv', key='v340_download',
         )
     elif _v340_abs:
         st.warning(
@@ -7142,22 +7236,22 @@ if _v340_saved:
             f"**CHF {_v340_abs['Gross rail LCOH CHF/kg']:,.2f}/kg** after {_v340_tested:,} search points. "
             'Widen only assumptions you can technically or commercially justify.'
         )
-    st.caption(f'V3.5.5 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
+    st.caption(f'V3.5.6 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
 
 
 
 # ============================================================
-# 12F — V3.5.5 MULTI-TARGET ECONOMIC FRONTIER
+# 12F — V3.5.6 MULTI-TARGET ECONOMIC FRONTIER
 # ============================================================
 st.markdown('<span id="horg-frontier" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown('##### 12F · V3.5.5 economic frontier — required conditions for CHF/kg targets')
+st.markdown('##### 12F · V3.5.6 economic frontier — required conditions for CHF/kg targets')
 st.caption(
     'Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. '
     'The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. '
     'REACHED means only that the target is mathematically reachable inside the declared screening bounds.'
 )
 
-with st.expander('V3.5.5 frontier targets and shared limits', expanded=True):
+with st.expander('V3.5.6 frontier targets and shared limits', expanded=True):
     v351_targets = _horg_multiselect(
         'Gross rail H₂ frontier targets (CHF/kg)',
         options=[10.0, 9.9, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0],
@@ -7171,7 +7265,7 @@ with st.expander('V3.5.5 frontier targets and shared limits', expanded=True):
         f"reactor CAPEX ≥ {v340_reactor_floor_pct:.0f}% of current; PV CAPEX ≥ {v340_pv_floor_pct:.0f}% of current; "
         f"financing ≥ {v340_fin_floor_pct:.1f}%."
     )
-    if st.button('Run V3.5.5 economic frontier', type='primary', key='v351_run'):
+    if st.button('Run V3.5.6 economic frontier', type='primary', key='v351_run'):
         if not v351_targets:
             st.warning('Select at least one CHF/kg frontier target.')
         else:
@@ -7288,13 +7382,13 @@ if _v351_saved:
         )
 
         st.download_button(
-            'Download V3.5.5 economic frontier (CSV)',
+            'Download V3.5.6 economic frontier (CSV)',
             _v351_df.to_csv(index=False).encode('utf-8'),
-            file_name='hydrogenorg_rail_economic_frontier_v351.csv',
+            file_name='hydrogenorg_rail_economic_frontier_v356.csv',
             mime='text/csv', key='v351_download',
         )
         st.caption(
-            f"V3.5.5 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
+            f"V3.5.6 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
             'so the multi-target frontier is materially faster than running four independent searches. '
             'Total modeled installed CAPEX is the sum of assets represented in this simulator only; it excludes '
             'unmodelled permitting, distribution, taxes, financing fees and other project-specific infrastructure.'
@@ -7824,4 +7918,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.5.5 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.5.6 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
