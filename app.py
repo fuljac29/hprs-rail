@@ -9,6 +9,874 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
+# ============================================================
+# V3.5.2 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
+# ============================================================
+# The simulator keeps English strings as the internal model vocabulary so
+# scenario logic, comparisons and CSV calculations are not changed by language.
+# Only presentation text is translated.  Query parameter ?lang=de or ?lang=it
+# allows the WordPress/TranslatePress page to open the embedded simulator in the
+# matching language; the user can always override it in the simulator sidebar.
+
+try:
+    _horg_query_lang = str(st.query_params.get("lang", "en")).lower()[:2]
+except Exception:
+    _horg_query_lang = "en"
+if _horg_query_lang not in ("en", "de", "it"):
+    _horg_query_lang = "en"
+if "horg_ui_lang" not in st.session_state:
+    st.session_state["horg_ui_lang"] = _horg_query_lang
+
+_HORG_LANG_NAMES = {"en": "English", "de": "Deutsch", "it": "Italiano"}
+_horg_lang_keys = list(_HORG_LANG_NAMES)
+_horg_lang_now = st.session_state.get("horg_ui_lang", "en")
+_horg_selected_lang = st.sidebar.selectbox(
+    "Language / Sprache / Lingua",
+    _horg_lang_keys,
+    index=_horg_lang_keys.index(_horg_lang_now) if _horg_lang_now in _horg_lang_keys else 0,
+    format_func=lambda code: _HORG_LANG_NAMES[code],
+    key="horg_language_selector",
+)
+if _horg_selected_lang != _horg_lang_now:
+    st.session_state["horg_ui_lang"] = _horg_selected_lang
+    try:
+        st.query_params["lang"] = _horg_selected_lang
+    except Exception:
+        pass
+
+
+def _horg_lang():
+    return st.session_state.get("horg_ui_lang", "en")
+
+
+# High-value full-sentence translations.  The phrase dictionaries below provide
+# broad coverage for labels, metrics, dynamically generated messages and HTML.
+_HORG_EXACT_DE = {
+    "Scenario inputs — not validated reactor performance.": "Szenarioeingaben — keine validierte Reaktorleistung.",
+    "Exploratory control parameters — not validated automotive reactor specifications.": "Explorative Regelparameter — keine validierten Spezifikationen eines Fahrzeugreaktors.",
+    "Diagnostic-only physics inputs. These do not represent measured HydrogenOrg reactor data.": "Physikalische Eingaben nur für die Diagnose. Sie stellen keine gemessenen HydrogenOrg-Reaktordaten dar.",
+    "Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.": "Unabhängige Bahndepot-Studie mit demselben H₂-Bedarf und denselben HPRS-W-Reaktoreinstellungen wie dieses Bahnmodell. Keine Live-Synchronisierung mit der separaten Hybrid-App.",
+    "Usable geothermal heat defaults to 0%. It is admitted only if the selected source temperature reaches the selected process preheat temperature. Plasma-core energy is not displaced.": "Nutzbare Geothermiewärme ist standardmäßig 0 %. Sie wird nur berücksichtigt, wenn die gewählte Quellentemperatur die gewählte Prozess-Vorwärmtemperatur erreicht. Die Energie des Plasmakerns wird nicht ersetzt.",
+    "Operating days are already at the 365-day ceiling.": "Die Betriebstage liegen bereits beim Maximum von 365 Tagen.",
+    "Financing rate is already 0%; no lower financing scenario exists.": "Der Finanzierungssatz liegt bereits bei 0 %; ein niedrigeres Finanzierungsszenario existiert nicht.",
+    "Select at least one CHF/kg frontier target.": "Wählen Sie mindestens ein CHF/kg-Ziel für die Wirtschaftlichkeitsgrenze.",
+    "Searching transparent PV-only scenarios...": "Transparente Nur-PV-Szenarien werden durchsucht ...",
+    "Calculating the multi-target economic frontier...": "Die Wirtschaftlichkeitsgrenze für mehrere Ziele wird berechnet ...",
+    "No positive rail H₂ demand; cost comparison cannot be interpreted.": "Kein positiver H₂-Bedarf der Bahn; der Kostenvergleich kann nicht interpretiert werden.",
+    "No fully costed own-production alternative; complete the cost inputs.": "Keine vollständig kalkulierte Eigenproduktionsalternative; ergänzen Sie die Kosteneingaben.",
+    "Enter all necessary investment and operating costs before testing utilisation.": "Geben Sie alle erforderlichen Investitions- und Betriebskosten ein, bevor Sie die Auslastung testen.",
+    "No fully costed alternative. Supply missing capital/maintenance or renewable transfer price first.": "Keine vollständig kalkulierte Alternative. Geben Sie zuerst fehlende Kapital-/Wartungskosten oder den Transferpreis für erneuerbare Energie ein.",
+    "PV installed CAPEX must be entered to rank owned PV alternatives.": "Die installierten PV-Investitionskosten müssen eingegeben werden, um eigene PV-Alternativen zu bewerten.",
+    "Enter an installed PV reference capacity above zero in the sidebar to derive a reliable CHF/kWp basis.": "Geben Sie in der Seitenleiste eine installierte PV-Referenzleistung größer als null ein, um eine verlässliche CHF/kWp-Basis abzuleiten.",
+    "Feed-in sales are shown as separate site revenue, NOT a reduction in the gross cost of making H₂. Actual export capacity, tariffs and grid connection must be contracted.": "Einspeiseerlöse werden als separate Standorterlöse ausgewiesen und NICHT als Senkung der Bruttokosten der H₂-Erzeugung. Tatsächliche Exportleistung, Tarife und Netzanschluss müssen vertraglich gesichert sein.",
+    "CHF 10/kg threshold is met IN THIS ILLUSTRATIVE FULL-COST MODEL; validate solar yield, CAPEX, plant SEC, demand and financing before claiming industrial competitiveness.": "Die Schwelle von CHF 10/kg wird IN DIESEM ILLUSTRATIVEN VOLLKOSTENMODELL erreicht; Solarertrag, CAPEX, spezifischer Anlagenverbrauch, Nachfrage und Finanzierung müssen validiert werden, bevor industrielle Wettbewerbsfähigkeit behauptet wird.",
+    "No Pareto frontier can be displayed because the selected search ranges contain no thermodynamically feasible points.": "Es kann keine Pareto-Grenze angezeigt werden, weil die gewählten Suchbereiche keine thermodynamisch zulässigen Punkte enthalten.",
+}
+
+_HORG_EXACT_IT = {
+    "Scenario inputs — not validated reactor performance.": "Dati di scenario — non rappresentano prestazioni validate del reattore.",
+    "Exploratory control parameters — not validated automotive reactor specifications.": "Parametri di controllo esplorativi — non sono specifiche validate di un reattore automobilistico.",
+    "Diagnostic-only physics inputs. These do not represent measured HydrogenOrg reactor data.": "Parametri fisici solo diagnostici. Non rappresentano dati misurati del reattore HydrogenOrg.",
+    "Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.": "Studio indipendente del deposito ferroviario, con lo stesso fabbisogno di H₂ e le stesse impostazioni HPRS-W di questo modello ferroviario. Nessuna sincronizzazione in tempo reale con l'app Hybrid separata.",
+    "Usable geothermal heat defaults to 0%. It is admitted only if the selected source temperature reaches the selected process preheat temperature. Plasma-core energy is not displaced.": "Il calore geotermico utilizzabile è impostato per default allo 0%. Viene ammesso solo se la temperatura della sorgente raggiunge la temperatura di preriscaldo selezionata. L'energia del nucleo plasma non viene sostituita.",
+    "Operating days are already at the 365-day ceiling.": "I giorni di funzionamento sono già al limite massimo di 365 giorni.",
+    "Financing rate is already 0%; no lower financing scenario exists.": "Il tasso di finanziamento è già allo 0%; non esiste uno scenario di finanziamento inferiore.",
+    "Select at least one CHF/kg frontier target.": "Seleziona almeno un obiettivo CHF/kg per la frontiera economica.",
+    "Searching transparent PV-only scenarios...": "Ricerca di scenari trasparenti solo fotovoltaico ...",
+    "Calculating the multi-target economic frontier...": "Calcolo della frontiera economica multi-obiettivo ...",
+    "No positive rail H₂ demand; cost comparison cannot be interpreted.": "Nessuna domanda ferroviaria positiva di H₂; il confronto dei costi non è interpretabile.",
+    "No fully costed own-production alternative; complete the cost inputs.": "Nessuna alternativa di produzione propria completamente valorizzata; completa i dati di costo.",
+    "Enter all necessary investment and operating costs before testing utilisation.": "Inserisci tutti i costi di investimento e di esercizio necessari prima di verificare l'utilizzo.",
+    "No fully costed alternative. Supply missing capital/maintenance or renewable transfer price first.": "Nessuna alternativa completamente valorizzata. Inserisci prima i costi mancanti di capitale/manutenzione o il prezzo di trasferimento dell'energia rinnovabile.",
+    "PV installed CAPEX must be entered to rank owned PV alternatives.": "Il CAPEX installato del fotovoltaico deve essere inserito per classificare le alternative PV di proprietà.",
+    "Enter an installed PV reference capacity above zero in the sidebar to derive a reliable CHF/kWp basis.": "Inserisci nella barra laterale una potenza PV di riferimento installata superiore a zero per ottenere una base CHF/kWp affidabile.",
+    "Feed-in sales are shown as separate site revenue, NOT a reduction in the gross cost of making H₂. Actual export capacity, tariffs and grid connection must be contracted.": "I ricavi da immissione in rete sono mostrati separatamente e NON riducono il costo lordo di produzione dell'H₂. Capacità di esportazione, tariffe e connessione alla rete devono essere contrattualizzate.",
+    "CHF 10/kg threshold is met IN THIS ILLUSTRATIVE FULL-COST MODEL; validate solar yield, CAPEX, plant SEC, demand and financing before claiming industrial competitiveness.": "La soglia di CHF 10/kg è raggiunta IN QUESTO MODELLO ILLUSTRATIVO A COSTO COMPLETO; rendimento solare, CAPEX, consumo specifico, domanda e finanziamento devono essere validati prima di dichiarare competitività industriale.",
+    "No Pareto frontier can be displayed because the selected search ranges contain no thermodynamically feasible points.": "Non è possibile visualizzare una frontiera di Pareto perché gli intervalli selezionati non contengono punti termodinamicamente ammissibili.",
+}
+
+# Longest phrases are replaced first.  This lets the same dictionary translate
+# static labels, metric labels and many dynamic/f-string messages while keeping
+# numeric values and model keys untouched.
+_HORG_PHRASES_DE = {
+    "Plasma Mobility Research Simulator": "Plasma-Mobilitäts-Forschungssimulator",
+    "Research-stage model": "Forschungsmodell",
+    "Mass & energy balance": "Massen- & Energiebilanz",
+    "Conventional ICE benchmark": "Referenz Verbrennungsmotor",
+    "Pulsed plasma control": "Gepulste Plasmaregelung",
+    "Same-net-power normalization": "Normierung auf gleiche Nettoleistung",
+    "HPRS-W plasma water splitting": "HPRS-W Plasma-Wasserspaltung",
+    "Rail mission + fuel-cell hybrid": "Bahnmission + Brennstoffzellen-Hybrid",
+    "Jump to:": "Direkt zu:",
+    "Research charts": "Forschungsdiagramme",
+    "Automotive results": "Automotive-Ergebnisse",
+    "Advanced theory": "Erweiterte Theorie",
+    "Rail simulator": "Bahnsimulator",
+    "Renewable rail depot": "Erneuerbares Bahndepot",
+    "Economic frontier": "Wirtschaftlichkeitsgrenze",
+    "References": "Quellen",
+    "Direct renewable electricity first.": "Direkte erneuerbare Elektrizität zuerst.",
+    "where hydrogen is required": "wo Wasserstoff erforderlich ist",
+    "Best overall energy pathway": "Bester Gesamtenergiepfad",
+    "Preferred HydrogenOrg H₂ research concept": "Bevorzugtes HydrogenOrg-H₂-Forschungskonzept",
+    "Scientific boundary": "Wissenschaftliche Grenze",
+    "No O₂ is produced by this reaction": "Bei dieser Reaktion entsteht kein O₂",
+    "Model assumptions": "Modellannahmen",
+    "Comparison focus": "Vergleichsfokus",
+    "Show all four pathways": "Alle vier Pfade anzeigen",
+    "Conventional gasoline": "Konventionelles Benzin",
+    "Conventional gasoline engine": "Konventioneller Benzinmotor",
+    "Dry HPRS carbon-retention": "Trockenes HPRS mit Kohlenstoffrückhaltung",
+    "Gasoline + water / steam": "Benzin + Wasser / Dampf",
+    "plasma water splitting": "Plasma-Wasserspaltung",
+    "Gross H₂-engine shaft power": "Brutto-Wellenleistung des H₂-Motors",
+    "H₂ engine brake efficiency": "Bremswirkungsgrad des H₂-Motors",
+    "Conventional gasoline engine efficiency": "Wirkungsgrad des konventionellen Benzinmotors",
+    "Scientific normalization": "Wissenschaftliche Normierung",
+    "Same net shaft power for comparison": "Gleiche Netto-Wellenleistung für den Vergleich",
+    "Overall fuel conversion after recycle": "Gesamte Brennstoffumwandlung nach Rückführung",
+    "H₂ recovery to engine": "H₂-Rückgewinnung zum Motor",
+    "Solid-carbon collection": "Abscheidung von Festkohlenstoff",
+    "Plasma mode": "Plasmamodus",
+    "Electrical model": "Elektrisches Modell",
+    "Continuous reference": "Kontinuierliche Referenz",
+    "Pulsed plasma": "Gepulstes Plasma",
+    "Plasma electricity": "Plasmaelektrizität",
+    "Energy per pulse per cell": "Energie pro Puls und Zelle",
+    "Pulse frequency control": "Pulsfrequenzregelung",
+    "Pulse frequency": "Pulsfrequenz",
+    "Pulse width": "Pulsbreite",
+    "Active plasma cells": "Aktive Plasmazellen",
+    "Validated recovered-energy offset": "Validierter Ausgleich durch zurückgewonnene Energie",
+    "Generator / power-electronics efficiency": "Wirkungsgrad Generator / Leistungselektronik",
+    "Steam-assisted comparison": "Dampfunterstützter Vergleich",
+    "Gasoline + steam pathway": "Pfad Benzin + Dampf",
+    "Steam reforming + WGS": "Dampfreformierung + WGS",
+    "Steam reforming to syngas": "Dampfreformierung zu Synthesegas",
+    "Steam-route thermal demand": "Thermischer Bedarf des Dampfpfads",
+    "Steam-route electrical auxiliaries": "Elektrische Hilfsenergie des Dampfpfads",
+    "Steam-route thermal recovery": "Wärmerückgewinnung des Dampfpfads",
+    "Water recycle": "Wasserrückführung",
+    "baseline plasma-system electricity": "Basis-Strombedarf des Plasmasystems",
+    "steam preheat demand": "Dampf-Vorwärmebedarf",
+    "base heat recovery": "Basis-Wärmerückgewinnung",
+    "Ion/species separation efficiency": "Wirkungsgrad der Ionen-/Speziestrennung",
+    "Quench/recombination H₂ loss": "H₂-Verlust durch Quench/Rekombination",
+    "H₂ purification recovery": "H₂-Rückgewinnung bei der Reinigung",
+    "O₂ recovery": "O₂-Rückgewinnung",
+    "Steam circulation / stoichiometric water": "Dampfkreislauf / stöchiometrisches Wasser",
+    "Excess-steam recycle": "Rückführung von Überschussdampf",
+    "Argon circulation": "Argonkreislauf",
+    "Argon recovery": "Argonrückgewinnung",
+    "experimental levers": "experimentelle Stellgrößen",
+    "Catalyst / plasma-catalysis scenario": "Katalysator-/Plasmakatalyse-Szenario",
+    "Catalyst scenario": "Katalysatorszenario",
+    "None / empty reactor": "Keiner / leerer Reaktor",
+    "literature reference": "Literaturreferenz",
+    "Custom experimental catalyst": "Benutzerdefinierter experimenteller Katalysator",
+    "Catalyst reduction of plasma kinetic/transport overhead": "Katalysatorbedingte Reduktion des kinetischen/Transport-Mehraufwands des Plasmas",
+    "Catalyst gain in delivered H₂ recovery chain": "Katalysatorgewinn in der H₂-Rückgewinnungskette",
+    "RF carrier + pulsed-envelope diagnostic": "RF-Träger + Puls-Hüllkurven-Diagnostik",
+    "RF carrier frequency": "RF-Trägerfrequenz",
+    "Custom RF carrier": "Benutzerdefinierter RF-Träger",
+    "Pulse-envelope repetition frequency": "Wiederholfrequenz der Puls-Hüllkurve",
+    "RF burst width": "RF-Burstbreite",
+    "Forward RF power during burst": "Vorwärts-RF-Leistung während des Bursts",
+    "RF generator + matching + plasma coupling efficiency": "Wirkungsgrad RF-Generator + Anpassung + Plasmakopplung",
+    "Measured/assumed pulsing reduction of remaining plasma overhead": "Gemessene/angenommene Reduktion des verbleibenden Plasma-Mehraufwands durch Pulsbetrieb",
+    "Improved energy recovery": "Verbesserte Energierückgewinnung",
+    "Additional steam-preheat heat recovery": "Zusätzliche Wärmerückgewinnung für Dampfvorwärmung",
+    "Additional rejected heat available for power recovery": "Zusätzliche Abwärme für Stromrückgewinnung",
+    "Rejected-heat → electricity conversion efficiency": "Wirkungsgrad Abwärme → Elektrizität",
+    "Argon recycle energy": "Energie für Argonrückführung",
+    "Ar recycle / cooling / compression electricity": "Strom für Ar-Rückführung / Kühlung / Verdichtung",
+    "advanced theory": "erweiterte Theorie",
+    "Thermodynamics, E/N, quench & sizing": "Thermodynamik, E/N, Quench & Dimensionierung",
+    "Reference ambient temperature": "Referenz-Umgebungstemperatur",
+    "External heat-source temperature": "Temperatur der externen Wärmequelle",
+    "Electric-field / ion-steering diagnostic": "Diagnostik elektrisches Feld / Ionenlenkung",
+    "Applied separation-zone voltage": "Angelegte Spannung der Trennzone",
+    "Electrode gap": "Elektrodenabstand",
+    "Separation-zone gas temperature": "Gastemperatur der Trennzone",
+    "Separation-zone pressure": "Druck der Trennzone",
+    "Effective ion mobility": "Effektive Ionenmobilität",
+    "Required lateral separation distance": "Erforderlicher lateraler Trennweg",
+    "Charged-species residence time": "Verweilzeit geladener Spezies",
+    "Quench / recombination diagnostic": "Quench-/Rekombinationsdiagnostik",
+    "Plasma-core temperature": "Temperatur des Plasmakerns",
+    "Quench outlet temperature": "Quench-Austrittstemperatur",
+    "Quench time": "Quench-Zeit",
+    "Effective first-order recombination time": "Effektive Rekombinationszeit erster Ordnung",
+    "Quench-loss treatment": "Behandlung der Quench-Verluste",
+    "Use direct scenario loss": "Direkten Szenarioverlust verwenden",
+    "Use first-order timescale estimate": "Zeitskalenabschätzung erster Ordnung verwenden",
+    "First-order reactor sizing": "Reaktordimensionierung erster Ordnung",
+    "Equivalent core length / diameter": "Äquivalente Kernlänge / Durchmesser",
+    "Plasma-core share of HPRS-W electricity": "Anteil des Plasmakerns am HPRS-W-Strombedarf",
+    "Effective hot-stream Cp": "Effektive Wärmekapazität Cp des heißen Stroms",
+    "Coolant allowable temperature rise": "Zulässiger Temperaturanstieg des Kühlmittels",
+    "feasible-region search": "Suche nach zulässigem Bereich",
+    "Multi-parameter competitive-region solver": "Mehrparameter-Solver für den Wettbewerbsbereich",
+    "search range": "Suchbereich",
+    "Feasible-region grid resolution": "Rasterauflösung des zulässigen Bereichs",
+    "Coarse": "Grob",
+    "Standard": "Standard",
+    "Fine": "Fein",
+    "prototype-target screen": "Prototyp-Zielprüfung",
+    "Prototype-oriented target constraints": "Prototyporientierte Zielgrenzen",
+    "Maximum prototype": "Maximale Prototyp-",
+    "rail application": "Bahnanwendung",
+    "Rail reference view": "Bahn-Referenzansicht",
+    "public guideposts": "öffentliche Richtwerte",
+    "Generic regional H₂ multiple unit": "Generischer regionaler H₂-Triebzug",
+    "Rail mission, vehicle and hybrid-system inputs": "Eingaben für Bahnmission, Fahrzeug und Hybridsystem",
+    "Mission distance": "Missionsdistanz",
+    "Daily distance": "Tagesdistanz",
+    "Train operating mass": "Betriebsmasse des Zuges",
+    "Cruise speed for resistance calculation": "Fahrgeschwindigkeit für Widerstandsberechnung",
+    "Average mission speed incl. stops": "Durchschnittsgeschwindigkeit inkl. Halte",
+    "Acceleration/braking cycle speed": "Geschwindigkeit im Beschleunigungs-/Bremszyklus",
+    "Peak acceleration assumption": "Annahme Spitzenbeschleunigung",
+    "Station stops per 100 km": "Stationshalte pro 100 km",
+    "Positive elevation gain per 100 km": "Positive Höhendifferenz pro 100 km",
+    "Rolling-resistance coefficient": "Rollwiderstandskoeffizient",
+    "Aerodynamic CdA": "Aerodynamisches CdA",
+    "DC-bus to wheel efficiency": "Wirkungsgrad DC-Bus → Rad",
+    "End-to-end regenerative recovery": "Gesamtwirkungsgrad Rekuperation",
+    "Average auxiliaries / HVAC load": "Durchschnittliche Hilfs-/HVAC-Last",
+    "Fuel-cell + battery hybrid": "Brennstoffzellen- + Batteriehybrid",
+    "Fuel-cell system efficiency": "Wirkungsgrad Brennstoffzellensystem",
+    "Fuel-cell net nominal power": "Netto-Nennleistung der Brennstoffzelle",
+    "Usable traction-battery energy": "Nutzbare Traktionsbatterieenergie",
+    "Usable onboard H₂ storage": "Nutzbarer H₂-Speicher an Bord",
+    "Delivered hydrogen price": "Gelieferter Wasserstoffpreis",
+    "Direct electric grid/catenary": "Direktstrom Netz/Oberleitung",
+    "Rail depot": "Bahndepot",
+    "screening assumptions": "Screening-Annahmen",
+    "Geothermal source temperature": "Temperatur der Geothermiequelle",
+    "Geothermal reinjection": "Geothermie-Reinjektion",
+    "Geothermal flow": "Geothermie-Massenstrom",
+    "Usable steam/conversion fraction": "Nutzbarer Dampf-/Umwandlungsanteil",
+    "Geothermal turbine efficiency": "Wirkungsgrad Geothermie-Turbine",
+    "Geothermal generator efficiency": "Wirkungsgrad Geothermie-Generator",
+    "Geothermal plant availability": "Verfügbarkeit Geothermieanlage",
+    "Geothermal parasitic consumption": "Eigenverbrauch Geothermieanlage",
+    "Geothermal heat recovery": "Geothermische Wärmerückgewinnung",
+    "Share of geothermal electricity allocated to Rail H₂": "Anteil geothermischer Elektrizität für Bahn-H₂",
+    "Portion of modeled heat usable at required temperature": "Anteil der modellierten Wärme bei erforderlicher Temperatur nutzbar",
+    "Minimum depot preheat supply temperature": "Mindest-Vorlauftemperatur der Depotvorwärmung",
+    "Photovoltaic and stationary battery": "Photovoltaik und stationäre Batterie",
+    "Solar PV capacity": "PV-Leistung",
+    "Representative full-sun hours/day": "Repräsentative Volllast-Sonnenstunden/Tag",
+    "Solar PV performance ratio": "PV-Performance-Ratio",
+    "Stationary battery capacity": "Kapazität der stationären Batterie",
+    "Battery charge/discharge power": "Batterie Lade-/Entladeleistung",
+    "Hydrogen and comparative economics": "Wasserstoff und Vergleichswirtschaftlichkeit",
+    "PEM electrical energy": "PEM-Strombedarf",
+    "Grid energy purchase price": "Strombezugspreis Netz",
+    "Renewable electricity transfer price": "Transferpreis erneuerbare Elektrizität",
+    "Purchased supplementary heat": "Zugekaufte Zusatzwärme",
+    "Geothermal heat transfer price": "Transferpreis Geothermiewärme",
+    "Additional process / compression OPEX": "Zusätzliche Prozess-/Verdichtungs-OPEX",
+    "Transparent capital amortization": "Transparente Kapitalamortisation",
+    "editable screening assumptions": "editierbare Screening-Annahmen",
+    "Operating days/year": "Betriebstage/Jahr",
+    "How renewable electricity and geothermal heat are paid for": "Wie erneuerbarer Strom und Geothermiewärme bezahlt werden",
+    "Owned assets — annualized CAPEX + maintenance": "Eigene Anlagen — annualisierte CAPEX + Wartung",
+    "Purchased renewables — energy transfer contract": "Zugekaufte erneuerbare Energie — Energietransfervertrag",
+    "Annual real discount / financing rate": "Realer jährlicher Diskont-/Finanzierungssatz",
+    "plant life": "Anlagenlebensdauer",
+    "installed CAPEX": "installierte CAPEX",
+    "annual fixed OPEX": "jährliche fixe OPEX",
+    "Research dashboard": "Forschungs-Dashboard",
+    "Scientific comparison": "Wissenschaftlicher Vergleich",
+    "Hypothesis": "Hypothese",
+    "Current operating-point costs": "Kosten am aktuellen Betriebspunkt",
+    "Rail Application": "Bahnanwendung",
+    "Rail mission energy and hybrid sizing": "Energie der Bahnmission und Hybriddimensionierung",
+    "Rail architecture comparison": "Vergleich der Bahnarchitekturen",
+    "Input-energy comparison": "Vergleich der Eingangsenergie",
+    "Modeled energy-cost comparison": "Vergleich der modellierten Energiekosten",
+    "rail diagnosis": "Bahndiagnose",
+    "Rail depot economics": "Wirtschaftlichkeit des Bahndepots",
+    "PV-only versus PV + geothermal": "Nur PV gegenüber PV + Geothermie",
+    "Hydrogen cost comparison": "Vergleich der Wasserstoffkosten",
+    "Cost per kg H₂": "Kosten pro kg H₂",
+    "includes annualized CAPEX": "einschließlich annualisierter CAPEX",
+    "Cost composition": "Kostenzusammensetzung",
+    "Transparent amortization": "Transparente Amortisation",
+    "inspect one alternative": "eine Alternative prüfen",
+    "Choose the alternative for detailed capital/depreciation calculations": "Alternative für detaillierte Kapital-/Abschreibungsberechnung wählen",
+    "Amortization formula, per-asset schedule, operating cost and power dispatch": "Amortisationsformel, Anlagenplan, Betriebskosten und Leistungsdispatch",
+    "Download full amortization and OPEX breakdown": "Vollständige Amortisations- und OPEX-Aufschlüsselung herunterladen",
+    "Download selected 24 h dispatch": "Gewählten 24-h-Dispatch herunterladen",
+    "Download all seven hydrogen cost alternatives": "Alle sieben Wasserstoffkosten-Alternativen herunterladen",
+    "Investment & amortization": "Investition & Amortisation",
+    "side-by-side comparison": "Direktvergleich",
+    "Download investment comparison": "Investitionsvergleich herunterladen",
+    "challenge": "Herausforderung",
+    "production utilisation and capital gap": "Produktionsauslastung und Kapitallücke",
+    "Target full-cost price": "Ziel-Vollkostenpreis",
+    "Utilisation stress test": "Auslastungs-Stresstest",
+    "same assets": "gleiche Anlagen",
+    "operating days": "Betriebstage",
+    "Download utilisation sensitivity": "Auslastungssensitivität herunterladen",
+    "PV surface optimizer": "PV-Flächenoptimierer",
+    "full-year solar, seasonal dispatch and excess output": "Ganzjahressolar, saisonaler Dispatch und Überschussproduktion",
+    "Solar-site sizing, surplus production and finance settings": "Dimensionierung Solarstandort, Überschussproduktion und Finanzierung",
+    "Annual irradiation proxy": "Jährlicher Einstrahlungs-Proxy",
+    "PV module power density": "PV-Modul-Leistungsdichte",
+    "Installed site area / panel area": "Installierte Standortfläche / Modulfläche",
+    "Maximum available solar site": "Maximal verfügbare Solarfläche",
+    "Extra PV site works CAPEX": "Zusätzliche CAPEX für PV-Standortarbeiten",
+    "Extra land lease / site expense": "Zusätzliche Pacht-/Standortkosten",
+    "H₂ reactor operation hours per operating day": "H₂-Reaktor-Betriebsstunden pro Betriebstag",
+    "H₂ reactor CAPEX capacity-scaling exponent": "Kapazitätsskalierungs-Exponent der H₂-Reaktor-CAPEX",
+    "H₂ day/night buffer installed CHF/kg capacity": "Installierte CHF/kg-Kapazität des H₂-Tag/Nacht-Puffers",
+    "H₂ buffer service life": "Lebensdauer H₂-Puffer",
+    "Treatment of electricity exceeding rail load": "Behandlung von Elektrizität oberhalb der Bahnlast",
+    "Curtail": "Abregeln",
+    "Sell surplus electricity": "Überschussstrom verkaufen",
+    "Extra H₂ sale": "Zusätzliches H₂ verkaufen",
+    "Feed-in tariff": "Einspeisetarif",
+    "ADDITIONAL H₂ line capacity": "ZUSÄTZLICHE H₂-Linienkapazität",
+    "Contracted maximum extra H₂ sales": "Vertraglich maximaler zusätzlicher H₂-Verkauf",
+    "Additional H₂ line installed CAPEX": "Installierte CAPEX der zusätzlichen H₂-Linie",
+    "Additional H₂ handling/storage OPEX": "Zusätzliche OPEX für H₂-Handling/Lagerung",
+    "Confirmed extra H₂ sale price": "Bestätigter Verkaufspreis für zusätzliches H₂",
+    "Optimization target": "Optimierungsziel",
+    "PV surface optimization resolution": "Auflösung der PV-Flächenoptimierung",
+    "Inspect annual monthly balance for": "Jährliche Monatsbilanz prüfen für",
+    "Annual / seasonal dispatch": "Jährlicher / saisonaler Dispatch",
+    "selected optimized configuration": "gewählte optimierte Konfiguration",
+    "Optimal surface curve": "Optimale Flächenkurve",
+    "all PV area candidates": "alle PV-Flächenkandidaten",
+    "Download all area-cost scenarios": "Alle Flächen-Kosten-Szenarien herunterladen",
+    "Download monthly seasonal dispatch": "Monatlichen saisonalen Dispatch herunterladen",
+    "single-target finder": "Einzelziel-Finder",
+    "PV-only, no geothermal, gross Rail H₂ cost": "nur PV, keine Geothermie, Bruttokosten Bahn-H₂",
+    "single-target search limits and assumptions": "Suchgrenzen und Annahmen für Einzelziel",
+    "Target gross rail H₂ cost": "Ziel-Bruttokosten Bahn-H₂",
+    "Target technology": "Zieltechnologie",
+    "Minimum solar site retained in target search": "Mindest-Solarfläche in der Zielsuche",
+    "Solar-area search resolution": "Suchauflösung Solarfläche",
+    "Lowest grid-price scenario allowed": "Niedrigster zulässiger Netzpreis",
+    "Maximum operating days/year allowed": "Maximal zulässige Betriebstage/Jahr",
+    "Minimum PEM electricity allowed": "Minimal zulässiger PEM-Strombedarf",
+    "Minimum HPRS-W electricity allowed": "Minimal zulässiger HPRS-W-Strombedarf",
+    "Lowest reactor CAPEX allowed": "Niedrigste zulässige Reaktor-CAPEX",
+    "Lowest PV CAPEX/kWp allowed": "Niedrigste zulässige PV-CAPEX/kWp",
+    "Lowest real financing rate allowed": "Niedrigster zulässiger realer Finanzierungssatz",
+    "Economic search resolution": "Auflösung der Wirtschaftlichkeitssuche",
+    "Run V3.5.2 single-target search": "V3.5.2 Einzelzielsuche starten",
+    "Download V3.5.2 target scenario": "V3.5.2 Zielszenario herunterladen",
+    "economic frontier": "Wirtschaftlichkeitsgrenze",
+    "required conditions for CHF/kg targets": "erforderliche Bedingungen für CHF/kg-Ziele",
+    "frontier targets and shared limits": "Grenzziele und gemeinsame Limits",
+    "Gross rail H₂ frontier targets": "Brutto-Bahn-H₂-Ziele der Wirtschaftlichkeitsgrenze",
+    "Run V3.5.2 economic frontier": "V3.5.2 Wirtschaftlichkeitsgrenze berechnen",
+    "Download V3.5.2 economic frontier": "V3.5.2 Wirtschaftlichkeitsgrenze herunterladen",
+    "Open separate HydrogenOrg Hybrid Energy simulator": "Separaten HydrogenOrg Hybrid Energy Simulator öffnen",
+    "Rail public references and model equations": "Öffentliche Bahnquellen und Modellgleichungen",
+    "Full scientific comparison, automotive hypotheses and references": "Vollständiger wissenschaftlicher Vergleich, Automotive-Hypothesen und Quellen",
+    "Same Net Shaft Power": "Gleiche Netto-Wellenleistung",
+    "Conventional Gasoline Engine Benchmark": "Referenz konventioneller Benzinmotor",
+    "Dry HPRS Carbon-Retention Interpretation": "Interpretation trockenes HPRS mit Kohlenstoffrückhaltung",
+    "Model basis and references": "Modellbasis und Quellen",
+    "model basis and benchmark references": "Modellbasis und Benchmark-Quellen",
+    "Simulation → laboratory validation → proof of concept": "Simulation → Laborvalidierung → Machbarkeitsnachweis",
+    "Download": "Herunterladen",
+    "Current": "Aktuell",
+    "Required": "Erforderlich",
+    "Estimated": "Geschätzt",
+    "Theoretical": "Theoretisch",
+    "Gross": "Brutto",
+    "Net": "Netto",
+    "Annual": "Jährlich",
+    "Monthly": "Monatlich",
+    "Optimal": "Optimal",
+    "Surplus": "Überschuss",
+    "Electricity": "Elektrizität",
+    "Energy": "Energie",
+    "Cost": "Kosten",
+    "Price": "Preis",
+    "Investment": "Investition",
+    "Financing": "Finanzierung",
+    "Technology": "Technologie",
+    "Configuration": "Konfiguration",
+    "Scenario": "Szenario",
+    "Target": "Ziel",
+    "Results": "Ergebnisse",
+    "Efficiency": "Wirkungsgrad",
+    "Power": "Leistung",
+    "Heat": "Wärme",
+    "Water": "Wasser",
+    "Battery": "Batterie",
+    "Geothermal": "Geothermie",
+    "Solar": "Solar",
+    "Rail": "Bahn",
+}
+
+_HORG_PHRASES_IT = {
+    "Plasma Mobility Research Simulator": "Simulatore di ricerca sulla mobilità al plasma",
+    "Research-stage model": "Modello in fase di ricerca",
+    "Mass & energy balance": "Bilancio di massa ed energia",
+    "Conventional ICE benchmark": "Riferimento motore a combustione",
+    "Pulsed plasma control": "Controllo plasma pulsato",
+    "Same-net-power normalization": "Normalizzazione alla stessa potenza netta",
+    "HPRS-W plasma water splitting": "Scissione dell'acqua al plasma HPRS-W",
+    "Rail mission + fuel-cell hybrid": "Missione ferroviaria + ibrido fuel-cell",
+    "Jump to:": "Vai a:",
+    "Research charts": "Grafici di ricerca",
+    "Automotive results": "Risultati automotive",
+    "Advanced theory": "Teoria avanzata",
+    "Rail simulator": "Simulatore ferroviario",
+    "Renewable rail depot": "Deposito ferroviario rinnovabile",
+    "Economic frontier": "Frontiera economica",
+    "References": "Riferimenti",
+    "Direct renewable electricity first.": "Prima l'elettricità rinnovabile diretta.",
+    "where hydrogen is required": "dove è necessario l'idrogeno",
+    "Best overall energy pathway": "Miglior percorso energetico complessivo",
+    "Preferred HydrogenOrg H₂ research concept": "Concetto di ricerca H₂ HydrogenOrg preferito",
+    "Scientific boundary": "Limite scientifico",
+    "No O₂ is produced by this reaction": "Questa reazione non produce O₂",
+    "Model assumptions": "Ipotesi del modello",
+    "Comparison focus": "Focus del confronto",
+    "Show all four pathways": "Mostra tutti e quattro i percorsi",
+    "Conventional gasoline": "Benzina convenzionale",
+    "Conventional gasoline engine": "Motore a benzina convenzionale",
+    "Dry HPRS carbon-retention": "HPRS a secco con ritenzione del carbonio",
+    "Gasoline + water / steam": "Benzina + acqua / vapore",
+    "plasma water splitting": "scissione dell'acqua al plasma",
+    "Gross H₂-engine shaft power": "Potenza lorda all'albero del motore H₂",
+    "H₂ engine brake efficiency": "Rendimento effettivo del motore H₂",
+    "Conventional gasoline engine efficiency": "Rendimento del motore a benzina convenzionale",
+    "Scientific normalization": "Normalizzazione scientifica",
+    "Same net shaft power for comparison": "Stessa potenza netta all'albero per il confronto",
+    "Overall fuel conversion after recycle": "Conversione complessiva del combustibile dopo il riciclo",
+    "H₂ recovery to engine": "Recupero H₂ verso il motore",
+    "Solid-carbon collection": "Raccolta del carbonio solido",
+    "Plasma mode": "Modalità plasma",
+    "Electrical model": "Modello elettrico",
+    "Continuous reference": "Riferimento continuo",
+    "Pulsed plasma": "Plasma pulsato",
+    "Plasma electricity": "Elettricità del plasma",
+    "Energy per pulse per cell": "Energia per impulso per cella",
+    "Pulse frequency control": "Controllo della frequenza degli impulsi",
+    "Pulse frequency": "Frequenza impulsi",
+    "Pulse width": "Durata impulso",
+    "Active plasma cells": "Celle plasma attive",
+    "Validated recovered-energy offset": "Compensazione validata dell'energia recuperata",
+    "Generator / power-electronics efficiency": "Rendimento generatore / elettronica di potenza",
+    "Steam-assisted comparison": "Confronto assistito dal vapore",
+    "Gasoline + steam pathway": "Percorso benzina + vapore",
+    "Steam reforming + WGS": "Steam reforming + WGS",
+    "Steam reforming to syngas": "Steam reforming a syngas",
+    "Steam-route thermal demand": "Fabbisogno termico del percorso a vapore",
+    "Steam-route electrical auxiliaries": "Ausiliari elettrici del percorso a vapore",
+    "Steam-route thermal recovery": "Recupero termico del percorso a vapore",
+    "Water recycle": "Riciclo acqua",
+    "baseline plasma-system electricity": "elettricità base del sistema plasma",
+    "steam preheat demand": "fabbisogno di preriscaldo del vapore",
+    "base heat recovery": "recupero termico base",
+    "Ion/species separation efficiency": "Efficienza di separazione ioni/specie",
+    "Quench/recombination H₂ loss": "Perdita H₂ per quench/ricombinazione",
+    "H₂ purification recovery": "Recupero H₂ nella purificazione",
+    "O₂ recovery": "Recupero O₂",
+    "Steam circulation / stoichiometric water": "Circolazione vapore / acqua stechiometrica",
+    "Excess-steam recycle": "Riciclo del vapore in eccesso",
+    "Argon circulation": "Circolazione argon",
+    "Argon recovery": "Recupero argon",
+    "experimental levers": "leve sperimentali",
+    "Catalyst / plasma-catalysis scenario": "Scenario catalizzatore / catalisi al plasma",
+    "Catalyst scenario": "Scenario catalizzatore",
+    "None / empty reactor": "Nessuno / reattore vuoto",
+    "literature reference": "riferimento bibliografico",
+    "Custom experimental catalyst": "Catalizzatore sperimentale personalizzato",
+    "Catalyst reduction of plasma kinetic/transport overhead": "Riduzione catalitica delle perdite cinetiche/di trasporto del plasma",
+    "Catalyst gain in delivered H₂ recovery chain": "Incremento catalitico della catena di recupero H₂",
+    "RF carrier + pulsed-envelope diagnostic": "Diagnostica portante RF + inviluppo pulsato",
+    "RF carrier frequency": "Frequenza portante RF",
+    "Custom RF carrier": "Portante RF personalizzata",
+    "Pulse-envelope repetition frequency": "Frequenza di ripetizione dell'inviluppo pulsato",
+    "RF burst width": "Durata burst RF",
+    "Forward RF power during burst": "Potenza RF diretta durante il burst",
+    "RF generator + matching + plasma coupling efficiency": "Efficienza generatore RF + adattamento + accoppiamento plasma",
+    "Measured/assumed pulsing reduction of remaining plasma overhead": "Riduzione misurata/assunta delle perdite residue del plasma mediante pulsazione",
+    "Improved energy recovery": "Recupero energetico migliorato",
+    "Additional steam-preheat heat recovery": "Recupero termico aggiuntivo per preriscaldo vapore",
+    "Additional rejected heat available for power recovery": "Calore residuo aggiuntivo disponibile per recupero elettrico",
+    "Rejected-heat → electricity conversion efficiency": "Efficienza di conversione calore residuo → elettricità",
+    "Argon recycle energy": "Energia per riciclo argon",
+    "Ar recycle / cooling / compression electricity": "Elettricità per riciclo / raffreddamento / compressione Ar",
+    "advanced theory": "teoria avanzata",
+    "Thermodynamics, E/N, quench & sizing": "Termodinamica, E/N, quench e dimensionamento",
+    "Reference ambient temperature": "Temperatura ambiente di riferimento",
+    "External heat-source temperature": "Temperatura della sorgente termica esterna",
+    "Electric-field / ion-steering diagnostic": "Diagnostica campo elettrico / guida ionica",
+    "Applied separation-zone voltage": "Tensione applicata alla zona di separazione",
+    "Electrode gap": "Distanza elettrodi",
+    "Separation-zone gas temperature": "Temperatura gas nella zona di separazione",
+    "Separation-zone pressure": "Pressione nella zona di separazione",
+    "Effective ion mobility": "Mobilità ionica effettiva",
+    "Required lateral separation distance": "Distanza laterale di separazione richiesta",
+    "Charged-species residence time": "Tempo di residenza delle specie cariche",
+    "Quench / recombination diagnostic": "Diagnostica quench / ricombinazione",
+    "Plasma-core temperature": "Temperatura del nucleo plasma",
+    "Quench outlet temperature": "Temperatura di uscita quench",
+    "Quench time": "Tempo di quench",
+    "Effective first-order recombination time": "Tempo effettivo di ricombinazione del primo ordine",
+    "Quench-loss treatment": "Trattamento delle perdite di quench",
+    "Use direct scenario loss": "Usa la perdita diretta dello scenario",
+    "Use first-order timescale estimate": "Usa la stima temporale del primo ordine",
+    "First-order reactor sizing": "Dimensionamento preliminare del reattore",
+    "Equivalent core length / diameter": "Lunghezza / diametro equivalente del nucleo",
+    "Plasma-core share of HPRS-W electricity": "Quota di elettricità HPRS-W del nucleo plasma",
+    "Effective hot-stream Cp": "Cp effettivo del flusso caldo",
+    "Coolant allowable temperature rise": "Aumento di temperatura ammesso del refrigerante",
+    "feasible-region search": "ricerca della regione ammissibile",
+    "Multi-parameter competitive-region solver": "Solver multiparametrico della regione competitiva",
+    "search range": "intervallo di ricerca",
+    "Feasible-region grid resolution": "Risoluzione griglia della regione ammissibile",
+    "Coarse": "Grossolana",
+    "Standard": "Standard",
+    "Fine": "Fine",
+    "prototype-target screen": "verifica obiettivo prototipo",
+    "Prototype-oriented target constraints": "Vincoli obiettivo orientati al prototipo",
+    "Maximum prototype": "Massimo del prototipo ",
+    "rail application": "applicazione ferroviaria",
+    "Rail reference view": "Vista di riferimento ferroviaria",
+    "public guideposts": "riferimenti pubblici",
+    "Generic regional H₂ multiple unit": "Unità multipla regionale H₂ generica",
+    "Rail mission, vehicle and hybrid-system inputs": "Dati di missione ferroviaria, veicolo e sistema ibrido",
+    "Mission distance": "Distanza missione",
+    "Daily distance": "Distanza giornaliera",
+    "Train operating mass": "Massa operativa del treno",
+    "Cruise speed for resistance calculation": "Velocità di crociera per il calcolo delle resistenze",
+    "Average mission speed incl. stops": "Velocità media missione incluse fermate",
+    "Acceleration/braking cycle speed": "Velocità ciclo accelerazione/frenata",
+    "Peak acceleration assumption": "Ipotesi accelerazione massima",
+    "Station stops per 100 km": "Fermate stazione per 100 km",
+    "Positive elevation gain per 100 km": "Dislivello positivo per 100 km",
+    "Rolling-resistance coefficient": "Coefficiente di resistenza al rotolamento",
+    "Aerodynamic CdA": "CdA aerodinamico",
+    "DC-bus to wheel efficiency": "Efficienza bus DC → ruota",
+    "End-to-end regenerative recovery": "Recupero rigenerativo complessivo",
+    "Average auxiliaries / HVAC load": "Carico medio ausiliari / HVAC",
+    "Fuel-cell + battery hybrid": "Ibrido fuel-cell + batteria",
+    "Fuel-cell system efficiency": "Efficienza sistema fuel-cell",
+    "Fuel-cell net nominal power": "Potenza nominale netta fuel-cell",
+    "Usable traction-battery energy": "Energia utilizzabile batteria di trazione",
+    "Usable onboard H₂ storage": "Stoccaggio H₂ utilizzabile a bordo",
+    "Delivered hydrogen price": "Prezzo dell'idrogeno consegnato",
+    "Direct electric grid/catenary": "Elettricità diretta rete/catenaria",
+    "Rail depot": "Deposito ferroviario",
+    "screening assumptions": "ipotesi di screening",
+    "Geothermal source temperature": "Temperatura sorgente geotermica",
+    "Geothermal reinjection": "Temperatura reiniezione geotermica",
+    "Geothermal flow": "Portata geotermica",
+    "Usable steam/conversion fraction": "Frazione utilizzabile vapore/conversione",
+    "Geothermal turbine efficiency": "Efficienza turbina geotermica",
+    "Geothermal generator efficiency": "Efficienza generatore geotermico",
+    "Geothermal plant availability": "Disponibilità impianto geotermico",
+    "Geothermal parasitic consumption": "Consumi ausiliari geotermici",
+    "Geothermal heat recovery": "Recupero termico geotermico",
+    "Share of geothermal electricity allocated to Rail H₂": "Quota di elettricità geotermica assegnata all'H₂ ferroviario",
+    "Portion of modeled heat usable at required temperature": "Quota del calore modellato utilizzabile alla temperatura richiesta",
+    "Minimum depot preheat supply temperature": "Temperatura minima di mandata per preriscaldo deposito",
+    "Photovoltaic and stationary battery": "Fotovoltaico e batteria stazionaria",
+    "Solar PV capacity": "Potenza fotovoltaica",
+    "Representative full-sun hours/day": "Ore equivalenti di pieno sole/giorno",
+    "Solar PV performance ratio": "Performance ratio fotovoltaico",
+    "Stationary battery capacity": "Capacità batteria stazionaria",
+    "Battery charge/discharge power": "Potenza carica/scarica batteria",
+    "Hydrogen and comparative economics": "Idrogeno ed economia comparativa",
+    "PEM electrical energy": "Energia elettrica PEM",
+    "Grid energy purchase price": "Prezzo acquisto energia di rete",
+    "Renewable electricity transfer price": "Prezzo di trasferimento elettricità rinnovabile",
+    "Purchased supplementary heat": "Calore supplementare acquistato",
+    "Geothermal heat transfer price": "Prezzo di trasferimento calore geotermico",
+    "Additional process / compression OPEX": "OPEX aggiuntivi processo / compressione",
+    "Transparent capital amortization": "Ammortamento trasparente del capitale",
+    "editable screening assumptions": "ipotesi di screening modificabili",
+    "Operating days/year": "Giorni di funzionamento/anno",
+    "How renewable electricity and geothermal heat are paid for": "Modalità di pagamento di elettricità rinnovabile e calore geotermico",
+    "Owned assets — annualized CAPEX + maintenance": "Impianti di proprietà — CAPEX annualizzato + manutenzione",
+    "Purchased renewables — energy transfer contract": "Rinnovabili acquistate — contratto di trasferimento energia",
+    "Annual real discount / financing rate": "Tasso reale annuo di attualizzazione / finanziamento",
+    "plant life": "vita utile impianto",
+    "installed CAPEX": "CAPEX installato",
+    "annual fixed OPEX": "OPEX fissi annui",
+    "Research dashboard": "Dashboard di ricerca",
+    "Scientific comparison": "Confronto scientifico",
+    "Hypothesis": "Ipotesi",
+    "Current operating-point costs": "Costi al punto operativo attuale",
+    "Rail Application": "Applicazione ferroviaria",
+    "Rail mission energy and hybrid sizing": "Energia della missione ferroviaria e dimensionamento ibrido",
+    "Rail architecture comparison": "Confronto architetture ferroviarie",
+    "Input-energy comparison": "Confronto energia in ingresso",
+    "Modeled energy-cost comparison": "Confronto dei costi energetici modellati",
+    "rail diagnosis": "diagnosi ferroviaria",
+    "Rail depot economics": "Economia del deposito ferroviario",
+    "PV-only versus PV + geothermal": "solo PV rispetto a PV + geotermia",
+    "Hydrogen cost comparison": "Confronto costo idrogeno",
+    "Cost per kg H₂": "Costo per kg H₂",
+    "includes annualized CAPEX": "include CAPEX annualizzato",
+    "Cost composition": "Composizione dei costi",
+    "Transparent amortization": "Ammortamento trasparente",
+    "inspect one alternative": "analizza un'alternativa",
+    "Choose the alternative for detailed capital/depreciation calculations": "Scegli l'alternativa per i calcoli dettagliati di capitale/ammortamento",
+    "Amortization formula, per-asset schedule, operating cost and power dispatch": "Formula di ammortamento, piano per asset, costi operativi e dispatch energetico",
+    "Download full amortization and OPEX breakdown": "Scarica dettaglio completo ammortamento e OPEX",
+    "Download selected 24 h dispatch": "Scarica dispatch 24 h selezionato",
+    "Download all seven hydrogen cost alternatives": "Scarica tutte le sette alternative di costo dell'idrogeno",
+    "Investment & amortization": "Investimento e ammortamento",
+    "side-by-side comparison": "confronto affiancato",
+    "Download investment comparison": "Scarica confronto investimenti",
+    "challenge": "sfida",
+    "production utilisation and capital gap": "utilizzo produttivo e divario di capitale",
+    "Target full-cost price": "Prezzo obiettivo a costo completo",
+    "Utilisation stress test": "Stress test di utilizzo",
+    "same assets": "stessi asset",
+    "operating days": "giorni di funzionamento",
+    "Download utilisation sensitivity": "Scarica sensibilità di utilizzo",
+    "PV surface optimizer": "Ottimizzatore superficie PV",
+    "full-year solar, seasonal dispatch and excess output": "solare annuale, dispatch stagionale e produzione in eccesso",
+    "Solar-site sizing, surplus production and finance settings": "Dimensionamento sito solare, produzione eccedente e impostazioni finanziarie",
+    "Annual irradiation proxy": "Proxy irraggiamento annuale",
+    "PV module power density": "Densità di potenza del modulo PV",
+    "Installed site area / panel area": "Area sito installata / area pannelli",
+    "Maximum available solar site": "Superficie solare massima disponibile",
+    "Extra PV site works CAPEX": "CAPEX aggiuntivo lavori sito PV",
+    "Extra land lease / site expense": "Costo aggiuntivo affitto terreno / sito",
+    "H₂ reactor operation hours per operating day": "Ore di funzionamento reattore H₂ per giorno operativo",
+    "H₂ reactor CAPEX capacity-scaling exponent": "Esponente di scala della capacità CAPEX del reattore H₂",
+    "H₂ day/night buffer installed CHF/kg capacity": "Capacità installata CHF/kg del buffer H₂ giorno/notte",
+    "H₂ buffer service life": "Vita utile buffer H₂",
+    "Treatment of electricity exceeding rail load": "Gestione dell'elettricità eccedente il carico ferroviario",
+    "Curtail": "Limitazione",
+    "Sell surplus electricity": "Vendi elettricità in eccesso",
+    "Extra H₂ sale": "Vendita H₂ aggiuntivo",
+    "Feed-in tariff": "Tariffa di immissione",
+    "ADDITIONAL H₂ line capacity": "Capacità linea H₂ AGGIUNTIVA",
+    "Contracted maximum extra H₂ sales": "Vendite massime contrattualizzate di H₂ aggiuntivo",
+    "Additional H₂ line installed CAPEX": "CAPEX installato linea H₂ aggiuntiva",
+    "Additional H₂ handling/storage OPEX": "OPEX aggiuntivi movimentazione/stoccaggio H₂",
+    "Confirmed extra H₂ sale price": "Prezzo confermato di vendita H₂ aggiuntivo",
+    "Optimization target": "Obiettivo di ottimizzazione",
+    "PV surface optimization resolution": "Risoluzione ottimizzazione superficie PV",
+    "Inspect annual monthly balance for": "Analizza il bilancio mensile annuale per",
+    "Annual / seasonal dispatch": "Dispatch annuale / stagionale",
+    "selected optimized configuration": "configurazione ottimizzata selezionata",
+    "Optimal surface curve": "Curva della superficie ottimale",
+    "all PV area candidates": "tutti i candidati di superficie PV",
+    "Download all area-cost scenarios": "Scarica tutti gli scenari area-costo",
+    "Download monthly seasonal dispatch": "Scarica dispatch stagionale mensile",
+    "single-target finder": "ricerca obiettivo singolo",
+    "PV-only, no geothermal, gross Rail H₂ cost": "solo PV, senza geotermia, costo lordo H₂ ferroviario",
+    "single-target search limits and assumptions": "limiti e ipotesi della ricerca obiettivo singolo",
+    "Target gross rail H₂ cost": "Costo lordo obiettivo H₂ ferroviario",
+    "Target technology": "Tecnologia obiettivo",
+    "Minimum solar site retained in target search": "Superficie solare minima mantenuta nella ricerca",
+    "Solar-area search resolution": "Risoluzione ricerca area solare",
+    "Lowest grid-price scenario allowed": "Scenario minimo consentito per il prezzo di rete",
+    "Maximum operating days/year allowed": "Massimo giorni operativi/anno consentiti",
+    "Minimum PEM electricity allowed": "Minimo consumo elettrico PEM consentito",
+    "Minimum HPRS-W electricity allowed": "Minimo consumo elettrico HPRS-W consentito",
+    "Lowest reactor CAPEX allowed": "CAPEX minimo consentito del reattore",
+    "Lowest PV CAPEX/kWp allowed": "CAPEX PV/kWp minimo consentito",
+    "Lowest real financing rate allowed": "Tasso reale minimo di finanziamento consentito",
+    "Economic search resolution": "Risoluzione della ricerca economica",
+    "Run V3.5.2 single-target search": "Avvia ricerca V3.5.2 obiettivo singolo",
+    "Download V3.5.2 target scenario": "Scarica scenario obiettivo V3.5.2",
+    "economic frontier": "frontiera economica",
+    "required conditions for CHF/kg targets": "condizioni richieste per gli obiettivi CHF/kg",
+    "frontier targets and shared limits": "obiettivi di frontiera e limiti condivisi",
+    "Gross rail H₂ frontier targets": "Obiettivi di frontiera del costo lordo H₂ ferroviario",
+    "Run V3.5.2 economic frontier": "Calcola frontiera economica V3.5.2",
+    "Download V3.5.2 economic frontier": "Scarica frontiera economica V3.5.2",
+    "Open separate HydrogenOrg Hybrid Energy simulator": "Apri il simulatore HydrogenOrg Hybrid Energy separato",
+    "Rail public references and model equations": "Riferimenti ferroviari pubblici ed equazioni del modello",
+    "Full scientific comparison, automotive hypotheses and references": "Confronto scientifico completo, ipotesi automotive e riferimenti",
+    "Same Net Shaft Power": "Stessa potenza netta all'albero",
+    "Conventional Gasoline Engine Benchmark": "Riferimento motore a benzina convenzionale",
+    "Dry HPRS Carbon-Retention Interpretation": "Interpretazione HPRS a secco con ritenzione del carbonio",
+    "Model basis and references": "Base del modello e riferimenti",
+    "model basis and benchmark references": "base del modello e riferimenti benchmark",
+    "Simulation → laboratory validation → proof of concept": "Simulazione → validazione in laboratorio → prova di concetto",
+    "Download": "Scarica",
+    "Current": "Attuale",
+    "Required": "Richiesto",
+    "Estimated": "Stimato",
+    "Theoretical": "Teorico",
+    "Gross": "Lordo",
+    "Net": "Netto",
+    "Annual": "Annuale",
+    "Monthly": "Mensile",
+    "Optimal": "Ottimale",
+    "Surplus": "Eccedenza",
+    "Electricity": "Elettricità",
+    "Energy": "Energia",
+    "Cost": "Costo",
+    "Price": "Prezzo",
+    "Investment": "Investimento",
+    "Financing": "Finanziamento",
+    "Technology": "Tecnologia",
+    "Configuration": "Configurazione",
+    "Scenario": "Scenario",
+    "Target": "Obiettivo",
+    "Results": "Risultati",
+    "Efficiency": "Efficienza",
+    "Power": "Potenza",
+    "Heat": "Calore",
+    "Water": "Acqua",
+    "Battery": "Batteria",
+    "Geothermal": "Geotermia",
+    "Solar": "Solare",
+    "Rail": "Ferrovia",
+}
+
+
+def _horg_translate_text(value):
+    if not isinstance(value, str) or _horg_lang() == "en":
+        return value
+    lang = _horg_lang()
+    exact = _HORG_EXACT_DE if lang == "de" else _HORG_EXACT_IT
+    phrases = _HORG_PHRASES_DE if lang == "de" else _HORG_PHRASES_IT
+    if value in exact:
+        return exact[value]
+    out = value
+    # Exact full-sentence fragments can also occur inside Markdown/HTML blocks.
+    for en, tr in sorted(exact.items(), key=lambda kv: len(kv[0]), reverse=True):
+        out = out.replace(en, tr)
+    for en, tr in sorted(phrases.items(), key=lambda kv: len(kv[0]), reverse=True):
+        out = out.replace(en, tr)
+    return out
+
+
+def _horg_translate_help(kwargs):
+    if isinstance(kwargs.get("help"), str):
+        kwargs["help"] = _horg_translate_text(kwargs["help"])
+    return kwargs
+
+
+# Preserve original Streamlit functions before replacing presentation wrappers.
+_horg_orig = {}
+for _name in (
+    "header", "subheader", "title", "caption", "markdown", "info", "warning",
+    "error", "success", "text", "write", "button", "download_button",
+    "link_button", "checkbox", "toggle", "slider", "number_input", "text_input",
+    "text_area", "selectbox", "radio", "multiselect", "select_slider", "expander",
+    "spinner", "tabs", "metric", "dataframe", "table", "line_chart", "bar_chart",
+    "area_chart",
+):
+    if hasattr(st, _name):
+        _horg_orig[_name] = getattr(st, _name)
+
+
+def _horg_simple_text_wrapper(name):
+    original = _horg_orig[name]
+    def wrapped(*args, **kwargs):
+        args = list(args)
+        if args and isinstance(args[0], str):
+            args[0] = _horg_translate_text(args[0])
+        elif name == "write":
+            args = [_horg_translate_text(x) if isinstance(x, str) else x for x in args]
+        _horg_translate_help(kwargs)
+        return original(*args, **kwargs)
+    return wrapped
+
+for _name in ("header", "subheader", "title", "caption", "markdown", "info", "warning", "error", "success", "text", "write"):
+    if _name in _horg_orig:
+        setattr(st, _name, _horg_simple_text_wrapper(_name))
+
+
+def _horg_label_wrapper(name):
+    original = _horg_orig[name]
+    def wrapped(label, *args, **kwargs):
+        _horg_translate_help(kwargs)
+        return original(_horg_translate_text(label), *args, **kwargs)
+    return wrapped
+
+for _name in ("button", "download_button", "link_button", "checkbox", "toggle", "slider", "number_input", "text_input", "text_area", "expander", "spinner"):
+    if _name in _horg_orig:
+        setattr(st, _name, _horg_label_wrapper(_name))
+
+
+def _horg_choice_wrapper(name):
+    original = _horg_orig[name]
+    def wrapped(label, options, *args, **kwargs):
+        existing = kwargs.pop("format_func", None)
+        def display(value):
+            shown = existing(value) if existing else value
+            return _horg_translate_text(shown) if isinstance(shown, str) else shown
+        kwargs["format_func"] = display
+        _horg_translate_help(kwargs)
+        return original(_horg_translate_text(label), options, *args, **kwargs)
+    return wrapped
+
+for _name in ("selectbox", "radio", "multiselect", "select_slider"):
+    if _name in _horg_orig:
+        setattr(st, _name, _horg_choice_wrapper(_name))
+
+if "tabs" in _horg_orig:
+    def _horg_tabs(labels, *args, **kwargs):
+        return _horg_orig["tabs"]([_horg_translate_text(x) for x in labels], *args, **kwargs)
+    st.tabs = _horg_tabs
+
+if "metric" in _horg_orig:
+    def _horg_metric(label, value, delta=None, *args, **kwargs):
+        _horg_translate_help(kwargs)
+        return _horg_orig["metric"](_horg_translate_text(label), value, delta, *args, **kwargs)
+    st.metric = _horg_metric
+
+# Metric calls made directly on st.columns() objects are translated too.
+try:
+    from streamlit.delta_generator import DeltaGenerator as _HorgDeltaGenerator
+    _horg_orig_dg_metric = _HorgDeltaGenerator.metric
+    def _horg_dg_metric(self, label, value, delta=None, *args, **kwargs):
+        if isinstance(kwargs.get("help"), str):
+            kwargs["help"] = _horg_translate_text(kwargs["help"])
+        return _horg_orig_dg_metric(self, _horg_translate_text(label), value, delta, *args, **kwargs)
+    _HorgDeltaGenerator.metric = _horg_dg_metric
+except Exception:
+    pass
+
+
+def _horg_localize_frame(data):
+    if _horg_lang() == "en":
+        return data
+    try:
+        # Pandas Styler: relabel display headers without changing model keys.
+        if hasattr(data, "data") and isinstance(data.data, pd.DataFrame) and hasattr(data, "relabel_index"):
+            labels = [_horg_translate_text(str(c)) for c in data.data.columns]
+            return data.relabel_index(labels, axis="columns")
+        if isinstance(data, pd.DataFrame):
+            out = data.copy()
+            out.columns = [_horg_translate_text(str(c)) for c in out.columns]
+            for col in out.select_dtypes(include="object").columns:
+                out[col] = out[col].map(lambda x: _horg_translate_text(x) if isinstance(x, str) else x)
+            return out
+        if isinstance(data, pd.Series):
+            out = data.copy()
+            if isinstance(out.name, str):
+                out.name = _horg_translate_text(out.name)
+            return out
+    except Exception:
+        return data
+    return data
+
+for _name in ("dataframe", "table", "line_chart", "bar_chart", "area_chart"):
+    if _name in _horg_orig:
+        _original = _horg_orig[_name]
+        def _make_data_wrapper(original):
+            def wrapped(data=None, *args, **kwargs):
+                return original(_horg_localize_frame(data), *args, **kwargs)
+            return wrapped
+        setattr(st, _name, _make_data_wrapper(_original))
+
+
 # Reference constants — V1 uses n-octane as a transparent gasoline surrogate.
 C_ATOMIC = 12.011
 H_ATOMIC = 1.008
@@ -103,7 +971,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.5.1 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.5.2 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -184,7 +1052,7 @@ def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_ra
 
 
 # ============================================================
-# V3.5.1 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
+# V3.5.2 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
 # Synthetic monthly representative days, not measured PVGIS weather.
 # Financial outputs must not be mistaken for validated plant LCOH.
 # ============================================================
@@ -440,7 +1308,7 @@ def rail_v337_evaluate(area_site_m2, technology, with_geothermal, battery_active
 
 
 # ============================================================
-# V3.5.1 — TARGET-COST SEARCH ENGINE
+# V3.5.2 — TARGET-COST SEARCH ENGINE
 # Finds transparent combinations that can meet a user target without hiding
 # assumptions inside sale revenues. The target is always GROSS rail H2 LCOH.
 # ============================================================
@@ -625,7 +1493,7 @@ def rail_v340_target_search(base_config, technology, target_chfkg,
 
 
 # ============================================================
-# V3.5.1 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
+# V3.5.2 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
 # Evaluates all requested gross rail-H2 cost targets in one pass so that
 # expensive seasonal dispatch evaluations are reused rather than repeated.
 # No export or H2-sale revenue is credited to gross production cost.
@@ -885,7 +1753,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.5.1: compact in-page navigation and readable chart areas. */
+    /* V3.5.2: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -901,7 +1769,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.1</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.2</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -922,7 +1790,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.5.1: compact section navigation. Internal anchors do not change model state.
+# V3.5.2: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -1032,12 +1900,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.5.1: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.5.2: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.5.1, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.5.2, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -1861,7 +2729,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.5.1 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
+    with st.expander("V3.5.2 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -3422,10 +4290,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.5.1: Always-visible charts and compact navigation; physics unchanged.
+# V3.5.2: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.5.1")
+st.subheader("Research graphics dashboard · V3.5.2")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -5056,7 +5924,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.5.1 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.5.2 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -5297,11 +6165,11 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.5.1 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.5.2 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.1)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.2)")
 st.caption(
     "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
     "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
@@ -5648,7 +6516,7 @@ st.download_button(
 )
 
 # ============================================================
-# V3.5.1 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# V3.5.2 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
 # No fictitious production gains or free renewable energy are assumed.
 # ============================================================
 st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
@@ -5787,7 +6655,7 @@ else:
     st.warning('Enter all necessary investment and operating costs before testing utilisation.')
 
 # ============================================================
-# 12D — V3.5.1 FULL-YEAR PV SITE AREA OPTIMIZATION
+# 12D — V3.5.2 FULL-YEAR PV SITE AREA OPTIMIZATION
 # ============================================================
 st.markdown('##### 12D · PV surface optimizer — full-year solar, seasonal dispatch and excess output')
 st.caption(
@@ -5795,7 +6663,7 @@ st.caption(
     'include winter/summer daylight, PV production on all 365 days and independent rail operating days. '
     'No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.'
 )
-with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.1', expanded=True):
+with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.2', expanded=True):
     r37_a, r37_b, r37_c = st.columns(3)
     with r37_a:
         r37_irradiation = st.number_input('Annual irradiation proxy (kWh/kWp/year BEFORE performance ratio)', 500.0, 2100.0, 1250.0, 50.0, key='r37_irr')
@@ -5971,16 +6839,16 @@ else:
 
 
 # ============================================================
-# 12E — V3.5.1 CHF 9.90 TARGET FINDER
+# 12E — V3.5.2 CHF 9.90 TARGET FINDER
 # ============================================================
-st.markdown('##### 12E · V3.5.1 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
+st.markdown('##### 12E · V3.5.2 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
 st.caption(
     'This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to '
     'make production cost look lower. It searches transparent combinations of solar area, grid purchase price, '
     'operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening '
     'scenario, not a supplier quote or market forecast.'
 )
-with st.expander('V3.5.1 single-target search limits and assumptions', expanded=True):
+with st.expander('V3.5.2 single-target search limits and assumptions', expanded=True):
     v340_a, v340_b, v340_c = st.columns(3)
     with v340_a:
         v340_target = st.number_input('Target gross rail H₂ cost (CHF/kg)', 1.0, 100.0, 9.90, 0.10, key='v340_target')
@@ -6012,7 +6880,7 @@ with st.expander('V3.5.1 single-target search limits and assumptions', expanded=
             st.caption('Financing rate is already 0%; no lower financing scenario exists.')
         v340_steps = st.select_slider('Economic search resolution', options=[3, 4, 5], value=4, key='v340_steps')
 
-    if st.button('Run V3.5.1 single-target search', type='primary', key='v340_run'):
+    if st.button('Run V3.5.2 single-target search', type='primary', key='v340_run'):
         with st.spinner('Searching transparent PV-only scenarios...'):
             v340_target_result, v340_absolute_result, v340_tested = rail_v340_target_search(
                 r37_config, v340_technology, v340_target,
@@ -6084,12 +6952,12 @@ if _v340_saved:
             f"{100*_v340_hit['Financing rate']:.1f}%."
         )
         st.caption(
-            'The V3.5.1 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
+            'The V3.5.2 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
             'confidence level or market forecast. The target search uses gross rail production cost, so export/sales revenue '
             'cannot create an artificial sub-CHF-9.90 result.'
         )
         st.download_button(
-            'Download V3.5.1 target scenario (CSV)',
+            'Download V3.5.2 target scenario (CSV)',
             v340_table.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_target_v351.csv', mime='text/csv', key='v340_download',
         )
@@ -6099,22 +6967,22 @@ if _v340_saved:
             f"**CHF {_v340_abs['Gross rail LCOH CHF/kg']:,.2f}/kg** after {_v340_tested:,} search points. "
             'Widen only assumptions you can technically or commercially justify.'
         )
-    st.caption(f'V3.5.1 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
+    st.caption(f'V3.5.2 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
 
 
 
 # ============================================================
-# 12F — V3.5.1 MULTI-TARGET ECONOMIC FRONTIER
+# 12F — V3.5.2 MULTI-TARGET ECONOMIC FRONTIER
 # ============================================================
 st.markdown('<span id="horg-frontier" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown('##### 12F · V3.5.1 economic frontier — required conditions for CHF/kg targets')
+st.markdown('##### 12F · V3.5.2 economic frontier — required conditions for CHF/kg targets')
 st.caption(
     'Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. '
     'The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. '
     'REACHED means only that the target is mathematically reachable inside the declared screening bounds.'
 )
 
-with st.expander('V3.5.1 frontier targets and shared limits', expanded=True):
+with st.expander('V3.5.2 frontier targets and shared limits', expanded=True):
     v351_targets = st.multiselect(
         'Gross rail H₂ frontier targets (CHF/kg)',
         options=[10.0, 9.9, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0],
@@ -6128,7 +6996,7 @@ with st.expander('V3.5.1 frontier targets and shared limits', expanded=True):
         f"reactor CAPEX ≥ {v340_reactor_floor_pct:.0f}% of current; PV CAPEX ≥ {v340_pv_floor_pct:.0f}% of current; "
         f"financing ≥ {v340_fin_floor_pct:.1f}%."
     )
-    if st.button('Run V3.5.1 economic frontier', type='primary', key='v351_run'):
+    if st.button('Run V3.5.2 economic frontier', type='primary', key='v351_run'):
         if not v351_targets:
             st.warning('Select at least one CHF/kg frontier target.')
         else:
@@ -6245,13 +7113,13 @@ if _v351_saved:
         )
 
         st.download_button(
-            'Download V3.5.1 economic frontier (CSV)',
+            'Download V3.5.2 economic frontier (CSV)',
             _v351_df.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_economic_frontier_v351.csv',
             mime='text/csv', key='v351_download',
         )
         st.caption(
-            f"V3.5.1 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
+            f"V3.5.2 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
             'so the multi-target frontier is materially faster than running four independent searches. '
             'Total modeled installed CAPEX is the sum of assets represented in this simulator only; it excludes '
             'unmodelled permitting, distribution, taxes, financing fees and other project-specific infrastructure.'
@@ -6781,4 +7649,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.5.1 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.5.2 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
