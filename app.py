@@ -11,7 +11,7 @@ st.set_page_config(
 
 
 # ============================================================
-# V3.5.2 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
+# V3.5.3 — LOCAL UI INTERNATIONALIZATION (EN / DE / IT)
 # ============================================================
 # The simulator keeps English strings as the internal model vocabulary so
 # scenario logic, comparisons and CSV calculations are not changed by language.
@@ -369,14 +369,14 @@ _HORG_PHRASES_DE = {
     "Lowest PV CAPEX/kWp allowed": "Niedrigste zulässige PV-CAPEX/kWp",
     "Lowest real financing rate allowed": "Niedrigster zulässiger realer Finanzierungssatz",
     "Economic search resolution": "Auflösung der Wirtschaftlichkeitssuche",
-    "Run V3.5.2 single-target search": "V3.5.2 Einzelzielsuche starten",
-    "Download V3.5.2 target scenario": "V3.5.2 Zielszenario herunterladen",
+    "Run V3.5.3 single-target search": "V3.5.3 Einzelzielsuche starten",
+    "Download V3.5.3 target scenario": "V3.5.3 Zielszenario herunterladen",
     "economic frontier": "Wirtschaftlichkeitsgrenze",
     "required conditions for CHF/kg targets": "erforderliche Bedingungen für CHF/kg-Ziele",
     "frontier targets and shared limits": "Grenzziele und gemeinsame Limits",
     "Gross rail H₂ frontier targets": "Brutto-Bahn-H₂-Ziele der Wirtschaftlichkeitsgrenze",
-    "Run V3.5.2 economic frontier": "V3.5.2 Wirtschaftlichkeitsgrenze berechnen",
-    "Download V3.5.2 economic frontier": "V3.5.2 Wirtschaftlichkeitsgrenze herunterladen",
+    "Run V3.5.3 economic frontier": "V3.5.3 Wirtschaftlichkeitsgrenze berechnen",
+    "Download V3.5.3 economic frontier": "V3.5.3 Wirtschaftlichkeitsgrenze herunterladen",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Separaten HydrogenOrg Hybrid Energy Simulator öffnen",
     "Rail public references and model equations": "Öffentliche Bahnquellen und Modellgleichungen",
     "Full scientific comparison, automotive hypotheses and references": "Vollständiger wissenschaftlicher Vergleich, Automotive-Hypothesen und Quellen",
@@ -688,14 +688,14 @@ _HORG_PHRASES_IT = {
     "Lowest PV CAPEX/kWp allowed": "CAPEX PV/kWp minimo consentito",
     "Lowest real financing rate allowed": "Tasso reale minimo di finanziamento consentito",
     "Economic search resolution": "Risoluzione della ricerca economica",
-    "Run V3.5.2 single-target search": "Avvia ricerca V3.5.2 obiettivo singolo",
-    "Download V3.5.2 target scenario": "Scarica scenario obiettivo V3.5.2",
+    "Run V3.5.3 single-target search": "Avvia ricerca V3.5.3 obiettivo singolo",
+    "Download V3.5.3 target scenario": "Scarica scenario obiettivo V3.5.3",
     "economic frontier": "frontiera economica",
     "required conditions for CHF/kg targets": "condizioni richieste per gli obiettivi CHF/kg",
     "frontier targets and shared limits": "obiettivi di frontiera e limiti condivisi",
     "Gross rail H₂ frontier targets": "Obiettivi di frontiera del costo lordo H₂ ferroviario",
-    "Run V3.5.2 economic frontier": "Calcola frontiera economica V3.5.2",
-    "Download V3.5.2 economic frontier": "Scarica frontiera economica V3.5.2",
+    "Run V3.5.3 economic frontier": "Calcola frontiera economica V3.5.3",
+    "Download V3.5.3 economic frontier": "Scarica frontiera economica V3.5.3",
     "Open separate HydrogenOrg Hybrid Energy simulator": "Apri il simulatore HydrogenOrg Hybrid Energy separato",
     "Rail public references and model equations": "Riferimenti ferroviari pubblici ed equazioni del modello",
     "Full scientific comparison, automotive hypotheses and references": "Confronto scientifico completo, ipotesi automotive e riferimenti",
@@ -737,6 +737,92 @@ _HORG_PHRASES_IT = {
     "Rail": "Ferrovia",
 }
 
+
+
+# ============================================================
+# V3.5.3 — COMPLETE HIGH-VISIBILITY DE / IT COPY
+# ============================================================
+_HORG_EXACT_DE.update({
+    "Plasma Mobility Research Simulator": "Plasma-Mobilitäts-Forschungssimulator",
+    "Research simulator for HPRS automotive pathways and a new rail application layer.": "Forschungssimulator für HPRS-Automotive-Pfade und eine neue Bahnanwendungsebene.",
+    "The rail module": "Das Bahnmodul",
+    "compares direct electric traction, stored-H₂ fuel-cell operation, depot HPRS-W hydrogen production": "vergleicht direkten elektrischen Antrieb, gespeicherten H₂-Brennstoffzellenbetrieb und die HPRS-W-Wasserstoffproduktion im Depot",
+    "and the theoretical possibility of an onboard HPRS-W loop.": "sowie die theoretische Möglichkeit eines HPRS-W-Kreislaufs an Bord.",
+    "Research-stage model": "Forschungsmodell",
+    "n-octane surrogate": "n-Oktan-Ersatzmodell",
+    "Mass & energy balance": "Massen- und Energiebilanz",
+    "Conventional ICE benchmark": "Referenz: konventioneller Verbrennungsmotor",
+    "Pulsed plasma control": "Gepulste Plasmaregelung",
+    "Same-net-power normalization": "Normierung auf gleiche Nettoleistung",
+    "HPRS-W plasma water splitting": "HPRS-W-Plasma-Wasserspaltung",
+    "H₂O–Ar RF concept · ~1 bar": "H₂O–Ar-RF-Konzept · ~1 bar",
+    "Rail mission + fuel-cell hybrid": "Bahnmission + Brennstoffzellen-Hybrid",
+    "V3.3 synthesis · executive energy conclusion": "V3.3 Synthese · Schlussfolgerung zur Energiebewertung",
+    "Direct renewable electricity first. H₂O–Ar RF plasma where hydrogen is required.": "Direkte erneuerbare Elektrizität zuerst. H₂O–Ar-RF-Plasma dort, wo Wasserstoff erforderlich ist.",
+    "Across the stationary and rail screening models, the lowest-energy end-use pathway is": "In den stationären und bahnbezogenen Screening-Modellen ist der Endnutzungspfad mit dem geringsten Energiebedarf",
+    "direct electricity supplied from renewable generation": "direkte Elektrizität aus erneuerbarer Erzeugung",
+    "whenever grid, catenary or battery operation is practical.": "wann immer Netz-, Oberleitungs- oder Batteriebetrieb praktikabel ist.",
+    "Hydrogen introduces additional conversion losses and should therefore be used where storage, range, logistics or infrastructure justify it.": "Wasserstoff verursacht zusätzliche Umwandlungsverluste und sollte daher dort eingesetzt werden, wo Speicherung, Reichweite, Logistik oder Infrastruktur ihn rechtfertigen.",
+    "1 · Best overall energy pathway": "1 · Bester Gesamtenergiepfad",
+    "Renewable electricity → electric drivetrain. This remains the reference to beat in the rail module.": "Erneuerbare Elektrizität → elektrischer Antriebsstrang. Dies bleibt die Referenz, die im Bahnmodul zu übertreffen ist.",
+    "2 · Preferred HydrogenOrg H₂ research concept": "2 · Bevorzugtes HydrogenOrg-H₂-Forschungskonzept",
+    "Atmospheric-pressure H₂O–Ar RF-plasma reactor with rapid quench, H₂/O₂ separation, heat recovery and argon recycle.": "H₂O–Ar-RF-Plasmareaktor bei Atmosphärendruck mit schneller Abschreckung, H₂/O₂-Trennung, Wärmerückgewinnung und Argonrückführung.",
+    "3 · What V3.3 actually supports": "3 · Was V3.3 tatsächlich unterstützt",
+    "The current HPRS-W point is not yet the energy winner. V3.3 adds catalyst, RF/pulse, heat/electric recovery and argon-loop levers while preserving the thermodynamic guards.": "Der aktuelle HPRS-W-Punkt ist energetisch noch nicht die beste Lösung. V3.3 ergänzt Stellgrößen für Katalysator, RF/Puls, Wärme-/Stromrückgewinnung und Argonkreislauf unter Beibehaltung der thermodynamischen Grenzen.",
+    "Scientific boundary: the simulator does not model RF electromagnetic coupling, detailed plasma kinetics, electrode/sheath physics or validated reactor hardware.": "Wissenschaftliche Grenze: Der Simulator modelliert weder die elektromagnetische RF-Kopplung noch detaillierte Plasmakinetik, Elektroden-/Sheath-Physik oder validierte Reaktorhardware.",
+    "“Atmospheric-pressure H₂O–Ar RF plasma” is the preferred reactor architecture for the next research stage, not a measured performance claim.": "„H₂O–Ar-RF-Plasma bei Atmosphärendruck“ ist die bevorzugte Reaktorarchitektur für die nächste Forschungsstufe und keine gemessene Leistungsbehauptung.",
+    "No O₂ is produced by this reaction": "Bei dieser Reaktion entsteht kein O₂",
+    "Simulator section navigation": "Simulator-Navigation",
+    "Jump to:": "Direkt zu:",
+    "Research charts": "Forschungsdiagramme",
+    "Automotive results": "Automotive-Ergebnisse",
+    "Advanced theory": "Erweiterte Theorie",
+    "Rail simulator": "Bahnsimulator",
+    "Renewable rail depot": "Erneuerbares Bahndepot",
+    "Economic frontier": "Wirtschaftlichkeitsgrenze",
+    "References": "Quellen",
+})
+
+_HORG_EXACT_IT.update({
+    "Plasma Mobility Research Simulator": "Simulatore di ricerca sulla mobilità al plasma",
+    "Research simulator for HPRS automotive pathways and a new rail application layer.": "Simulatore di ricerca per i percorsi HPRS automobilistici e un nuovo livello applicativo ferroviario.",
+    "The rail module": "Il modulo ferroviario",
+    "compares direct electric traction, stored-H₂ fuel-cell operation, depot HPRS-W hydrogen production": "confronta trazione elettrica diretta, funzionamento a celle a combustibile con H₂ stoccato e produzione di idrogeno HPRS-W in deposito",
+    "and the theoretical possibility of an onboard HPRS-W loop.": "e la possibilità teorica di un circuito HPRS-W a bordo.",
+    "Research-stage model": "Modello in fase di ricerca",
+    "n-octane surrogate": "surrogato n-ottano",
+    "Mass & energy balance": "Bilancio di massa ed energia",
+    "Conventional ICE benchmark": "Riferimento motore a combustione convenzionale",
+    "Pulsed plasma control": "Controllo del plasma impulsato",
+    "Same-net-power normalization": "Normalizzazione alla stessa potenza netta",
+    "HPRS-W plasma water splitting": "Scissione dell’acqua al plasma HPRS-W",
+    "H₂O–Ar RF concept · ~1 bar": "Concetto RF H₂O–Ar · ~1 bar",
+    "Rail mission + fuel-cell hybrid": "Missione ferroviaria + ibrido a celle a combustibile",
+    "V3.3 synthesis · executive energy conclusion": "Sintesi V3.3 · conclusione energetica",
+    "Direct renewable electricity first. H₂O–Ar RF plasma where hydrogen is required.": "Prima l’elettricità rinnovabile diretta. Plasma RF H₂O–Ar dove è necessario l’idrogeno.",
+    "Across the stationary and rail screening models, the lowest-energy end-use pathway is": "Nei modelli di screening stazionari e ferroviari, il percorso di utilizzo finale a minor consumo energetico è",
+    "direct electricity supplied from renewable generation": "l’elettricità diretta fornita da generazione rinnovabile",
+    "whenever grid, catenary or battery operation is practical.": "quando il funzionamento tramite rete, catenaria o batteria è praticabile.",
+    "Hydrogen introduces additional conversion losses and should therefore be used where storage, range, logistics or infrastructure justify it.": "L’idrogeno introduce ulteriori perdite di conversione e dovrebbe quindi essere utilizzato dove stoccaggio, autonomia, logistica o infrastruttura lo giustificano.",
+    "1 · Best overall energy pathway": "1 · Miglior percorso energetico complessivo",
+    "Renewable electricity → electric drivetrain. This remains the reference to beat in the rail module.": "Elettricità rinnovabile → trazione elettrica. Questa rimane la soluzione di riferimento da superare nel modulo ferroviario.",
+    "2 · Preferred HydrogenOrg H₂ research concept": "2 · Concetto di ricerca H₂ HydrogenOrg preferito",
+    "Atmospheric-pressure H₂O–Ar RF-plasma reactor with rapid quench, H₂/O₂ separation, heat recovery and argon recycle.": "Reattore al plasma RF H₂O–Ar a pressione atmosferica con rapido quench, separazione H₂/O₂, recupero di calore e riciclo dell’argon.",
+    "3 · What V3.3 actually supports": "3 · Cosa supporta realmente la V3.3",
+    "The current HPRS-W point is not yet the energy winner. V3.3 adds catalyst, RF/pulse, heat/electric recovery and argon-loop levers while preserving the thermodynamic guards.": "L’attuale punto HPRS-W non è ancora la soluzione energeticamente migliore. La V3.3 aggiunge leve su catalizzatore, RF/impulsi, recupero termico/elettrico e circuito dell’argon, mantenendo i vincoli termodinamici.",
+    "Scientific boundary: the simulator does not model RF electromagnetic coupling, detailed plasma kinetics, electrode/sheath physics or validated reactor hardware.": "Limite scientifico: il simulatore non modella l’accoppiamento elettromagnetico RF, la cinetica dettagliata del plasma, la fisica elettrodo/sheath o hardware di reattore validato.",
+    "“Atmospheric-pressure H₂O–Ar RF plasma” is the preferred reactor architecture for the next research stage, not a measured performance claim.": "Il «plasma RF H₂O–Ar a pressione atmosferica» è l’architettura di reattore preferita per la prossima fase di ricerca, non una dichiarazione di prestazione misurata.",
+    "No O₂ is produced by this reaction": "Questa reazione non produce O₂",
+    "Simulator section navigation": "Navigazione del simulatore",
+    "Jump to:": "Vai a:",
+    "Research charts": "Grafici di ricerca",
+    "Automotive results": "Risultati automotive",
+    "Advanced theory": "Teoria avanzata",
+    "Rail simulator": "Simulatore ferroviario",
+    "Renewable rail depot": "Deposito ferroviario rinnovabile",
+    "Economic frontier": "Frontiera economica",
+    "References": "Riferimenti",
+})
 
 def _horg_translate_text(value):
     if not isinstance(value, str) or _horg_lang() == "en":
@@ -971,7 +1057,7 @@ WATER_SPLIT_THERMONEUTRAL_VOLTAGE_V = (
     WATER_SPLIT_DH_KJ_PER_MOL_H2 * 1000.0 / (2.0 * FARADAY_C_MOL)
 )
 
-# V3.5.2 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
+# V3.5.3 standalone renewable-rail depot: scenario-specific finance and PV-only comparison.
 def rail_hybrid_dispatch(pv_kwp, sun_hours, pv_pr, geo_electric_kwh_day,
                          geo_alloc_frac, battery_capacity_kwh, battery_power_kw,
                          battery_rt_eff, h2_kg_day, specific_electricity_kwh_kg):
@@ -1052,7 +1138,7 @@ def rail_asset_cost_schedule(capex_by_asset, lifetime_by_asset, real_discount_ra
 
 
 # ============================================================
-# V3.5.2 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
+# V3.5.3 — SEASONAL SOLAR / LAND-AREA OPTIMIZATION ENGINE
 # Synthetic monthly representative days, not measured PVGIS weather.
 # Financial outputs must not be mistaken for validated plant LCOH.
 # ============================================================
@@ -1308,7 +1394,7 @@ def rail_v337_evaluate(area_site_m2, technology, with_geothermal, battery_active
 
 
 # ============================================================
-# V3.5.2 — TARGET-COST SEARCH ENGINE
+# V3.5.3 — TARGET-COST SEARCH ENGINE
 # Finds transparent combinations that can meet a user target without hiding
 # assumptions inside sale revenues. The target is always GROSS rail H2 LCOH.
 # ============================================================
@@ -1493,7 +1579,7 @@ def rail_v340_target_search(base_config, technology, target_chfkg,
 
 
 # ============================================================
-# V3.5.2 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
+# V3.5.3 — MULTI-TARGET ECONOMIC FRONTIER ENGINE
 # Evaluates all requested gross rail-H2 cost targets in one pass so that
 # expensive seasonal dispatch evaluations are reused rather than repeated.
 # No export or H2-sale revenue is credited to gross production cost.
@@ -1753,7 +1839,7 @@ st.markdown(
         -webkit-text-fill-color:#15803d!important;
         opacity:1!important;
     }
-    /* V3.5.2: compact in-page navigation and readable chart areas. */
+    /* V3.5.3: compact in-page navigation and readable chart areas. */
     .horg-nav{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;margin:0 0 1.05rem;padding:.65rem .75rem;border:1px solid #c7dce9;border-radius:14px;background:#edf7fc;}
     .horg-nav-label{color:#29465a;font-size:.82rem;font-weight:800;margin-right:.25rem;}
     .horg-nav a{display:inline-block;padding:.37rem .68rem;border:1px solid #b7d8e8;border-radius:999px;background:#fff;color:#075277!important;text-decoration:none!important;font-size:.82rem;font-weight:800;}
@@ -1769,7 +1855,7 @@ st.markdown(
 st.markdown(
     """
     <div class="horg-hero">
-      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.2</span>
+      <span class="horg-kicker">HydrogenOrg · HPRS Automotive + Rail V3.5.3</span>
       <h1>Plasma Mobility Research Simulator</h1>
       <p>
         Research simulator for HPRS automotive pathways and a new rail application layer. The rail module
@@ -1790,7 +1876,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# V3.5.2: compact section navigation. Internal anchors do not change model state.
+# V3.5.3: compact section navigation. Internal anchors do not change model state.
 st.markdown(
     """
     <nav class="horg-nav" aria-label="Simulator section navigation">
@@ -1900,12 +1986,12 @@ st.markdown(
 )
 
 st.caption(
-    "V3.5.2: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
+    "V3.5.3: key charts are visible in the research dashboard; long detailed sections remain collapsed by default. "
     "Open them only when needed; HPRS-W experimental levers and the Rail application remain directly visible."
 )
 
 st.info(
-    "Four automotive pathways are retained from V3.5.2, and a new rail layer evaluates a regional hydrogen train mission. "
+    "Four automotive pathways are retained from V3.5.3, and a new rail layer evaluates a regional hydrogen train mission. "
     "The rail module compares direct electric traction, purchased/stored H2 + fuel cell, depot HPRS-W + fuel cell, "
     "and an onboard HPRS-W loop-closure diagnostic. Public FLIRT H2 values are shown only as guideposts; train mass, "
     "route physics and component sizing remain editable scenario assumptions."
@@ -2729,7 +2815,7 @@ with st.sidebar:
         ) / 100.0
 
     st.divider()
-    with st.expander("V3.5.2 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
+    with st.expander("V3.5.3 · Rail depot: PV / PV+battery / PV+geothermal+battery", expanded=False):
         st.caption("Independent rail-depot study, using the same H₂ demand and HPRS-W reactor settings as this Rail model. No live synchronization with the standalone Hybrid app.")
         st.markdown("##### Geothermal V4.0 — screening assumptions")
         rh_geo_temp_c = st.number_input("Geothermal source temperature (°C)", 80.0, 380.0, 220.0, 5.0, key="rh_geo_t")
@@ -4290,10 +4376,10 @@ plasma_floor_shaft_burden_kw = (
 )
 max_net_at_thermo_floor_kw = gross_engine_kw - plasma_floor_shaft_burden_kw
 
-# V3.5.2: Always-visible charts and compact navigation; physics unchanged.
+# V3.5.3: Always-visible charts and compact navigation; physics unchanged.
 st.markdown("---")
 st.markdown('<span id="horg-graphics" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("Research graphics dashboard · V3.5.2")
+st.subheader("Research graphics dashboard · V3.5.3")
 st.caption(
     "These charts update with the sidebar assumptions. All automotive results use the same "
     f"net shaft-power target ({comparison_net_kw:.0f} kW). Values are model scenarios, not measurements."
@@ -5924,7 +6010,7 @@ with st.expander("HPRS-W advanced theory, feasible-region and Pareto analysis", 
 
 st.markdown("---")
 st.markdown('<span id="horg-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.subheader("V3.5.2 Rail Application — HPRS-W for a regional hydrogen train")
+st.subheader("V3.5.3 Rail Application — HPRS-W for a regional hydrogen train")
 st.caption(
     "The rail layer keeps the train electrically driven. It asks where the hydrogen comes from and whether HPRS-W "
     "is better treated as a depot hydrogen-production process or as an onboard reactor. Public FLIRT H2 figures are "
@@ -6165,11 +6251,11 @@ if rail_proto_chain_eff is not None:
     )
 
 # ============================================================
-# V3.5.2 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
+# V3.5.3 RAIL DEPOT: PV-ONLY vs GEOTHERMAL + PV, TRANSPARENT AMORTIZATION
 # Compare independent plants at exactly the same rail H2 production volume.
 # ============================================================
 st.markdown('<span id="horg-hybrid-rail" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.2)")
+st.markdown("#### 12 · Rail depot economics — PV-only versus PV + geothermal (V3.5.3)")
 st.caption(
     "Six independent scenarios, all serving the SAME daily rail H₂ demand: PV without battery, "
     "PV with battery, and PV + geothermal with battery; each evaluated for HPRS-W and PEM. "
@@ -6516,7 +6602,7 @@ st.download_button(
 )
 
 # ============================================================
-# V3.5.2 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
+# V3.5.3 INVESTMENT / AMORTIZATION / PV-ONLY FINANCIAL DASHBOARD
 # No fictitious production gains or free renewable energy are assumed.
 # ============================================================
 st.markdown('##### 12A · Investment & amortization — side-by-side comparison')
@@ -6655,7 +6741,7 @@ else:
     st.warning('Enter all necessary investment and operating costs before testing utilisation.')
 
 # ============================================================
-# 12D — V3.5.2 FULL-YEAR PV SITE AREA OPTIMIZATION
+# 12D — V3.5.3 FULL-YEAR PV SITE AREA OPTIMIZATION
 # ============================================================
 st.markdown('##### 12D · PV surface optimizer — full-year solar, seasonal dispatch and excess output')
 st.caption(
@@ -6663,7 +6749,7 @@ st.caption(
     'include winter/summer daylight, PV production on all 365 days and independent rail operating days. '
     'No PVGIS hourly dataset, bankable weather forecast or verified hardware efficiency is claimed.'
 )
-with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.2', expanded=True):
+with st.expander('Solar-site sizing, surplus production and finance settings · V3.5.3', expanded=True):
     r37_a, r37_b, r37_c = st.columns(3)
     with r37_a:
         r37_irradiation = st.number_input('Annual irradiation proxy (kWh/kWp/year BEFORE performance ratio)', 500.0, 2100.0, 1250.0, 50.0, key='r37_irr')
@@ -6839,16 +6925,16 @@ else:
 
 
 # ============================================================
-# 12E — V3.5.2 CHF 9.90 TARGET FINDER
+# 12E — V3.5.3 CHF 9.90 TARGET FINDER
 # ============================================================
-st.markdown('##### 12E · V3.5.2 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
+st.markdown('##### 12E · V3.5.3 single-target finder — PV-only, no geothermal, gross Rail H₂ cost')
 st.caption(
     'This section does NOT force a result below the target and does NOT use export or H₂-sale revenue to '
     'make production cost look lower. It searches transparent combinations of solar area, grid purchase price, '
     'operating utilisation, process electricity, financing and CAPEX. A target result is a conditional screening '
     'scenario, not a supplier quote or market forecast.'
 )
-with st.expander('V3.5.2 single-target search limits and assumptions', expanded=True):
+with st.expander('V3.5.3 single-target search limits and assumptions', expanded=True):
     v340_a, v340_b, v340_c = st.columns(3)
     with v340_a:
         v340_target = st.number_input('Target gross rail H₂ cost (CHF/kg)', 1.0, 100.0, 9.90, 0.10, key='v340_target')
@@ -6880,7 +6966,7 @@ with st.expander('V3.5.2 single-target search limits and assumptions', expanded=
             st.caption('Financing rate is already 0%; no lower financing scenario exists.')
         v340_steps = st.select_slider('Economic search resolution', options=[3, 4, 5], value=4, key='v340_steps')
 
-    if st.button('Run V3.5.2 single-target search', type='primary', key='v340_run'):
+    if st.button('Run V3.5.3 single-target search', type='primary', key='v340_run'):
         with st.spinner('Searching transparent PV-only scenarios...'):
             v340_target_result, v340_absolute_result, v340_tested = rail_v340_target_search(
                 r37_config, v340_technology, v340_target,
@@ -6952,12 +7038,12 @@ if _v340_saved:
             f"{100*_v340_hit['Financing rate']:.1f}%."
         )
         st.caption(
-            'The V3.5.2 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
+            'The V3.5.3 change score ranks how far a candidate moves from the current assumptions; it is NOT a probability, '
             'confidence level or market forecast. The target search uses gross rail production cost, so export/sales revenue '
             'cannot create an artificial sub-CHF-9.90 result.'
         )
         st.download_button(
-            'Download V3.5.2 target scenario (CSV)',
+            'Download V3.5.3 target scenario (CSV)',
             v340_table.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_target_v351.csv', mime='text/csv', key='v340_download',
         )
@@ -6967,22 +7053,22 @@ if _v340_saved:
             f"**CHF {_v340_abs['Gross rail LCOH CHF/kg']:,.2f}/kg** after {_v340_tested:,} search points. "
             'Widen only assumptions you can technically or commercially justify.'
         )
-    st.caption(f'V3.5.2 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
+    st.caption(f'V3.5.3 search points evaluated: {_v340_tested:,}. Re-run the search after changing the limits above.')
 
 
 
 # ============================================================
-# 12F — V3.5.2 MULTI-TARGET ECONOMIC FRONTIER
+# 12F — V3.5.3 MULTI-TARGET ECONOMIC FRONTIER
 # ============================================================
 st.markdown('<span id="horg-frontier" class="horg-section-anchor"></span>', unsafe_allow_html=True)
-st.markdown('##### 12F · V3.5.2 economic frontier — required conditions for CHF/kg targets')
+st.markdown('##### 12F · V3.5.3 economic frontier — required conditions for CHF/kg targets')
 st.caption(
     'Runs several gross Rail H₂ cost targets in ONE optimized search using the same limits selected in 12E. '
     'The frontier does not use export revenue, H₂-sale revenue, geothermal or batteries to manufacture a low cost. '
     'REACHED means only that the target is mathematically reachable inside the declared screening bounds.'
 )
 
-with st.expander('V3.5.2 frontier targets and shared limits', expanded=True):
+with st.expander('V3.5.3 frontier targets and shared limits', expanded=True):
     v351_targets = st.multiselect(
         'Gross rail H₂ frontier targets (CHF/kg)',
         options=[10.0, 9.9, 9.5, 9.0, 8.5, 8.0, 7.5, 7.0, 6.5, 6.0],
@@ -6996,7 +7082,7 @@ with st.expander('V3.5.2 frontier targets and shared limits', expanded=True):
         f"reactor CAPEX ≥ {v340_reactor_floor_pct:.0f}% of current; PV CAPEX ≥ {v340_pv_floor_pct:.0f}% of current; "
         f"financing ≥ {v340_fin_floor_pct:.1f}%."
     )
-    if st.button('Run V3.5.2 economic frontier', type='primary', key='v351_run'):
+    if st.button('Run V3.5.3 economic frontier', type='primary', key='v351_run'):
         if not v351_targets:
             st.warning('Select at least one CHF/kg frontier target.')
         else:
@@ -7113,13 +7199,13 @@ if _v351_saved:
         )
 
         st.download_button(
-            'Download V3.5.2 economic frontier (CSV)',
+            'Download V3.5.3 economic frontier (CSV)',
             _v351_df.to_csv(index=False).encode('utf-8'),
             file_name='hydrogenorg_rail_economic_frontier_v351.csv',
             mime='text/csv', key='v351_download',
         )
         st.caption(
-            f"V3.5.2 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
+            f"V3.5.3 frontier base points evaluated: {_v351_tested:,}. Each base point is reused for every target, "
             'so the multi-target frontier is materially faster than running four independent searches. '
             'Total modeled installed CAPEX is the sum of assets represented in this simulator only; it excludes '
             'unmodelled permitting, distribution, taxes, financing fees and other project-specific infrastructure.'
@@ -7649,4 +7735,4 @@ with st.expander("Full scientific comparison, automotive hypotheses and referenc
             """
         )
 
-    st.caption("HPRS Automotive + Rail V3.5.2 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
+    st.caption("HPRS Automotive + Rail V3.5.3 · renewable rail-depot H₂ + Pareto + economic frontier · Simulation → laboratory validation → proof of concept")
